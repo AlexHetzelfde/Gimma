@@ -7,15 +7,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg:        #0f0f0f;
-      --bg2:       #1a1a1a;
-      --bg3:       #242424;
-      --border:    #2e2e2e;
-      --text:      #e8e3db;
-      --muted:     #7a7570;
-      --accent:    #c8a96e;
-      --accent2:   #8fb5a0;
-      --error:     #c46a5a;
+      --bg:      #0f0f0f;
+      --bg2:     #1a1a1a;
+      --bg3:     #242424;
+      --border:  #2e2e2e;
+      --text:    #e8e3db;
+      --muted:   #7a7570;
+      --accent:  #c8a96e;
+      --accent2: #8fb5a0;
+      --error:   #c46a5a;
+      --goed:    #5a9e7a;
+      --fout:    #c46a5a;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,35 +31,56 @@
       flex-direction: column;
     }
 
+    /* ── Header ── */
     header {
-      padding: 1.5rem 2rem;
+      padding: 1.25rem 2rem;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
     }
 
     .logo {
       font-family: 'Lora', serif;
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       color: var(--accent);
-      letter-spacing: 0.02em;
     }
 
     .logo span {
       color: var(--muted);
       font-weight: 400;
-      font-size: 0.9rem;
-      margin-left: 0.75rem;
+      font-size: 0.85rem;
+      margin-left: 0.6rem;
     }
 
     .datum {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--muted);
       letter-spacing: 0.05em;
       text-transform: uppercase;
     }
 
+    /* ── Voortgangsbalk bovenaan les ── */
+    #les-voortgang {
+      display: none;
+      height: 3px;
+      background: var(--border);
+    }
+
+    #les-voortgang.zichtbaar { display: block; }
+
+    #les-voortgang-balk {
+      height: 100%;
+      background: var(--accent);
+      transition: width 0.5s ease;
+      width: 0%;
+    }
+
+    /* ── Homescreen ── */
     #homescreen {
       flex: 1;
       display: flex;
@@ -82,52 +105,20 @@
       color: var(--muted);
       font-size: 1rem;
       max-width: 420px;
+      margin: 0 auto;
     }
 
-    .knop-primair {
-      background: var(--accent);
-      color: #0f0f0f;
-      border: none;
-      padding: 1rem 2.5rem;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 1rem;
-      font-weight: 500;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: opacity 0.2s, transform 0.15s;
-      letter-spacing: 0.01em;
-    }
-
-    .knop-primair:hover { opacity: 0.85; transform: translateY(-1px); }
-    .knop-primair:active { transform: translateY(0); }
-    .knop-primair:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
+    /* ── Laadbalk (genereren) ── */
     #status-wrap {
       display: none;
       flex-direction: column;
       align-items: center;
       gap: 1rem;
       width: 100%;
-      max-width: 500px;
+      max-width: 480px;
     }
 
     #status-wrap.zichtbaar { display: flex; }
-
-    .laadbalk-bg {
-      width: 100%;
-      height: 3px;
-      background: var(--border);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-
-    .laadbalk-voortgang {
-      height: 100%;
-      background: var(--accent);
-      border-radius: 2px;
-      width: 0%;
-      transition: width 0.4s ease;
-    }
 
     #status-tekst {
       font-size: 0.85rem;
@@ -135,173 +126,350 @@
       text-align: center;
     }
 
-    /* ── Debug JSON weergave (stap 2) ── */
-    #debug-wrap {
-      display: none;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 2rem 1.5rem 4rem;
+    .laadbalk-bg {
       width: 100%;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
     }
 
-    #debug-wrap.zichtbaar { display: block; }
-
-    .debug-label {
-      font-size: 0.75rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 0.5rem;
+    .laadbalk-voortgang {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.6s ease;
     }
 
-    .debug-titel {
-      font-family: 'Lora', serif;
-      font-size: clamp(1.4rem, 4vw, 2rem);
-      font-weight: 600;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid var(--border);
+    /* Shimmer animatie als Gemini bezig is */
+    .laadbalk-shimmer {
+      position: absolute;
+      top: 0; left: -100%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+      animation: shimmer 1.4s infinite;
     }
 
-    /* Sectie preview cards */
-    .sectie-card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 1.25rem;
+    @keyframes shimmer {
+      0%   { left: -60%; }
+      100% { left: 110%; }
     }
 
-    .sectie-card h3 {
-      font-family: 'Lora', serif;
-      font-size: 1.1rem;
-      color: var(--accent);
-      margin-bottom: 0.75rem;
-    }
-
-    .sectie-card p {
-      font-size: 0.9rem;
-      color: var(--muted);
-      line-height: 1.6;
-      margin-bottom: 1rem;
-    }
-
-    .vraag-item {
-      background: var(--bg3);
-      border-radius: 4px;
-      padding: 0.75rem 1rem;
-      margin-bottom: 0.5rem;
-      font-size: 0.85rem;
-    }
-
-    .vraag-item .type-badge {
-      display: inline-block;
-      font-size: 0.7rem;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      padding: 0.15rem 0.5rem;
-      border-radius: 3px;
-      margin-bottom: 0.4rem;
-    }
-
-    .type-badge.meerkeuze {
-      background: rgba(200, 169, 110, 0.15);
-      color: var(--accent);
-    }
-
-    .type-badge.open {
-      background: rgba(143, 181, 160, 0.15);
-      color: var(--accent2);
-    }
-
-    .vraag-tekst { color: var(--text); margin-bottom: 0.35rem; }
-    .vraag-antwoord { color: var(--muted); font-style: italic; font-size: 0.8rem; }
-
-    .tijdlijn-item {
-      display: flex;
-      gap: 0.75rem;
-      align-items: baseline;
-      padding: 0.4rem 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.85rem;
-    }
-
-    .tijdlijn-item:last-child { border-bottom: none; }
-
-    .tijdlijn-jaar {
-      color: var(--accent);
+    /* ── Knoppen ── */
+    .knop-primair {
+      background: var(--accent);
+      color: #0f0f0f;
+      border: none;
+      padding: 0.9rem 2rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
       font-weight: 500;
-      min-width: 60px;
-      flex-shrink: 0;
-    }
-
-    .debug-meta {
-      margin-top: 1.5rem;
-      padding: 1rem;
-      background: var(--bg2);
-      border-radius: 6px;
-      font-size: 0.8rem;
-      color: var(--muted);
-      border: 1px solid var(--border);
-    }
-
-    /* Raw JSON toggle */
-    .json-toggle {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      padding: 0.5rem 1rem;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 0.8rem;
-      margin-top: 1rem;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .knop-primair:hover { opacity: 0.85; transform: translateY(-1px); }
+    .knop-primair:active { transform: translateY(0); }
+    .knop-primair:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+    .knop-secundair {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.75rem 1.75rem;
       font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      border-radius: 4px;
+      cursor: pointer;
       transition: border-color 0.2s;
     }
 
-    .json-toggle:hover { border-color: var(--accent); color: var(--accent); }
+    .knop-secundair:hover { border-color: var(--accent); color: var(--accent); }
 
-    #raw-json {
-      display: none;
-      margin-top: 1rem;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 1rem;
-      font-size: 0.75rem;
-      color: var(--muted);
-      white-space: pre-wrap;
-      word-break: break-all;
-      max-height: 400px;
-      overflow-y: auto;
-      font-family: monospace;
-    }
-
-    #raw-json.zichtbaar { display: block; }
-
-    .fout {
+    /* ── Fout ── */
+    .fout-melding {
       background: rgba(196, 106, 90, 0.1);
       border: 1px solid var(--error);
       color: var(--error);
       padding: 1rem 1.25rem;
       border-radius: 6px;
       font-size: 0.9rem;
-      max-width: 500px;
+      max-width: 480px;
       text-align: center;
     }
 
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bg2); }
+    /* ════════════════════════════════════════
+       LES SCHERM
+    ════════════════════════════════════════ */
+    #les-scherm {
+      display: none;
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 5rem;
+      width: 100%;
+    }
+
+    #les-scherm.zichtbaar { display: block; }
+
+    /* Sectie header */
+    .sectie-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.4rem;
+    }
+
+    .sectie-nummer {
+      color: var(--muted);
+    }
+
+    .sectie-titel {
+      font-family: 'Lora', serif;
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      font-weight: 600;
+      line-height: 1.25;
+      margin-bottom: 2rem;
+    }
+
+    /* Leestekst */
+    .sectie-tekst {
+      font-family: 'Lora', serif;
+      font-size: 1.05rem;
+      line-height: 1.9;
+      color: var(--text);
+      margin-bottom: 2rem;
+    }
+
+    .sectie-tekst p {
+      margin-bottom: 1.1rem;
+    }
+
+    .sectie-tekst p:last-child { margin-bottom: 0; }
+
+    /* Tijdlijn */
+    .tijdlijn-wrap {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .tijdlijn-kop {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 1rem;
+    }
+
+    .tijdlijn-rij {
+      display: flex;
+      gap: 1rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+      align-items: baseline;
+      font-size: 0.9rem;
+    }
+
+    .tijdlijn-rij:last-child { border-bottom: none; }
+
+    .tijdlijn-jaar {
+      color: var(--accent);
+      font-weight: 500;
+      min-width: 65px;
+      flex-shrink: 0;
+    }
+
+    /* Scheidingslijn voor vragen */
+    .vragen-scheiding {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2.5rem 0;
+    }
+
+    .vragen-kop {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Meerkeuze vraag ── */
+    .vraag-blok {
+      margin-bottom: 2rem;
+    }
+
+    .vraag-tekst {
+      font-size: 1rem;
+      font-weight: 500;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+      color: var(--text);
+    }
+
+    .opties-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .optie-knop {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.85rem 1.1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: left;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      transition: border-color 0.15s, background 0.15s;
+      line-height: 1.4;
+    }
+
+    .optie-knop:hover:not(:disabled) {
+      border-color: var(--accent);
+      background: var(--bg3);
+    }
+
+    .optie-knop.goed {
+      border-color: var(--goed);
+      background: rgba(90, 158, 122, 0.12);
+      color: var(--goed);
+    }
+
+    .optie-knop.fout {
+      border-color: var(--fout);
+      background: rgba(196, 106, 90, 0.1);
+      color: var(--fout);
+    }
+
+    .optie-knop.gemist {
+      border-color: var(--goed);
+      color: var(--goed);
+      opacity: 0.6;
+    }
+
+    .optie-knop:disabled { cursor: default; }
+
+    /* Feedback label */
+    .feedback {
+      margin-top: 0.6rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      min-height: 1.2rem;
+    }
+
+    .feedback.goed { color: var(--goed); }
+    .feedback.fout { color: var(--fout); }
+
+    /* ── Open vraag ── */
+    .open-invoer-wrap {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .open-invoer {
+      flex: 1;
+      min-width: 200px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.8rem 1rem;
+      border-radius: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .open-invoer:focus { border-color: var(--accent); }
+    .open-invoer:disabled { opacity: 0.5; }
+
+    .open-invoer.goed { border-color: var(--goed); }
+    .open-invoer.fout { border-color: var(--fout); }
+
+    .open-invoer-knop {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.8rem 1.2rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      transition: border-color 0.15s;
+      white-space: nowrap;
+    }
+
+    .open-invoer-knop:hover:not(:disabled) { border-color: var(--accent); }
+    .open-invoer-knop:disabled { opacity: 0.4; cursor: default; }
+
+    /* ── Navigatie onderaan sectie ── */
+    .sectie-nav {
+      margin-top: 2.5rem;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* ── Afsluiting scherm ── */
+    #klaar-scherm {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1.5rem;
+      text-align: center;
+      gap: 1.5rem;
+    }
+
+    #klaar-scherm.zichtbaar { display: flex; }
+
+    .klaar-icoon {
+      font-size: 3rem;
+      line-height: 1;
+    }
+
+    .klaar-titel {
+      font-family: 'Lora', serif;
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      font-weight: 600;
+    }
+
+    .klaar-stats {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    .klaar-stats strong { color: var(--accent); }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   </style>
 </head>
 <body>
+
+<!-- Voortgangsbalk bovenaan (alleen tijdens les) -->
+<div id="les-voortgang"><div id="les-voortgang-balk"></div></div>
 
 <header>
   <div class="logo">WikiLeer <span>dagelijks leren</span></div>
   <div class="datum" id="header-datum"></div>
 </header>
 
+<!-- ═══ HOMESCREEN ═══ -->
 <div id="homescreen">
   <div class="hero-tekst">
     <h1>Leer iets nieuws<br/>vandaag</h1>
@@ -316,113 +484,151 @@
     <div id="status-tekst">Bezig...</div>
     <div class="laadbalk-bg">
       <div class="laadbalk-voortgang" id="laadbalk"></div>
+      <div class="laadbalk-shimmer" id="laadbalk-shimmer" style="display:none"></div>
     </div>
   </div>
 
   <div id="fout-wrap"></div>
 </div>
 
-<!-- Stap 2: debug weergave van de Gemini JSON output -->
-<div id="debug-wrap">
-  <div class="debug-label">✅ Gemini output — stap 2 controle</div>
-  <div class="debug-titel" id="debug-titel"></div>
-  <div id="debug-secties"></div>
-  <div class="debug-meta" id="debug-meta"></div>
-  <button class="json-toggle" onclick="toggleJson()">Bekijk ruwe JSON</button>
-  <div id="raw-json"></div>
+<!-- ═══ LES SCHERM ═══ -->
+<div id="les-scherm">
+  <div class="sectie-label">
+    <span id="sectie-label-tekst">Sectie</span>
+    <span class="sectie-nummer" id="sectie-nummer-tekst"></span>
+  </div>
+  <div class="sectie-titel" id="sectie-titel"></div>
+  <div class="sectie-tekst" id="sectie-tekst"></div>
+  <div id="tijdlijn-wrap" class="tijdlijn-wrap" style="display:none">
+    <div class="tijdlijn-kop">Tijdlijn</div>
+    <div id="tijdlijn-inhoud"></div>
+  </div>
+
+  <!-- Vragen (verborgen totdat gelezen) -->
+  <div id="vragen-sectie" style="display:none">
+    <hr class="vragen-scheiding"/>
+    <div class="vragen-kop">Test jezelf</div>
+    <div id="vragen-inhoud"></div>
+    <div class="sectie-nav">
+      <button class="knop-primair" id="knop-volgende" onclick="volgendeSectie()" disabled>
+        Volgende →
+      </button>
+    </div>
+  </div>
+
+  <!-- Knop: ik heb gelezen -->
+  <div class="sectie-nav" id="knop-gelezen-wrap">
+    <button class="knop-secundair" onclick="toonVragen()">
+      Ik heb dit gelezen →
+    </button>
+  </div>
+</div>
+
+<!-- ═══ KLAAR SCHERM ═══ -->
+<div id="klaar-scherm">
+  <div class="klaar-icoon">🎓</div>
+  <div class="klaar-titel">Les voltooid!</div>
+  <div class="klaar-stats" id="klaar-stats"></div>
+  <button class="knop-secundair" onclick="location.reload()">Terug naar begin</button>
 </div>
 
 <script>
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // 🔑 VULL HIER JOUW GEMINI API KEY IN
-  const GEMINI_API_KEY = "AIzaSyAsy6ELGkp1lalfZUBzePPawL9wzcAst-I";
+  const GEMINI_API_KEY = "JOUW_API_KEY_HIER";
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-  const MAX_TEKST_LENGTE = 12000; // Gemini heeft genoeg context, maar te lange teksten vertragen
+  const MAX_TEKST_LENGTE = 6000;
 
-  // ── Datum in header ──
-  const nu = new Date();
+  // ── State ──
+  let lesData = null;
+  let artikelTitel = '';
+  let huidigeSectie = 0;
+  let antwoorden = []; // { sectieIndex, vraagIndex, goed }
+  let schijnInterval = null;
+
+  // ── Datum ──
   document.getElementById('header-datum').textContent =
-    nu.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-  // ── Status helpers ──
-  function setStatus(tekst, voortgang) {
+  // ════════════════════════════════════════
+  // LAADBALK HELPERS
+  // ════════════════════════════════════════
+  function setStatus(tekst, voortgang, shimmer = false) {
     document.getElementById('status-wrap').classList.add('zichtbaar');
     document.getElementById('status-tekst').textContent = tekst;
     document.getElementById('laadbalk').style.width = voortgang + '%';
+    document.getElementById('laadbalk-shimmer').style.display = shimmer ? 'block' : 'none';
+  }
+
+  function startSchijnVoortgang(van, tot) {
+    let huidige = van;
+    schijnInterval = setInterval(() => {
+      huidige = Math.min(huidige + 0.8, tot);
+      document.getElementById('laadbalk').style.width = huidige + '%';
+    }, 600);
+  }
+
+  function stopSchijnVoortgang() {
+    if (schijnInterval) { clearInterval(schijnInterval); schijnInterval = null; }
+    document.getElementById('laadbalk-shimmer').style.display = 'none';
   }
 
   function verbergStatus() {
+    stopSchijnVoortgang();
     document.getElementById('status-wrap').classList.remove('zichtbaar');
   }
 
   function toonFout(bericht) {
     document.getElementById('fout-wrap').innerHTML =
-      `<div class="fout">⚠️ ${bericht}</div>`;
+      `<div class="fout-melding">⚠️ ${bericht}</div>`;
+    document.getElementById('knop-les').disabled = false;
   }
 
-  function toggleJson() {
-    document.getElementById('raw-json').classList.toggle('zichtbaar');
-  }
-
-  // ── Wikipedia: haal naam uitgelicht artikel op ──
+  // ════════════════════════════════════════
+  // WIKIPEDIA
+  // ════════════════════════════════════════
   async function haalUitgelichtArtikel() {
-    const url = 'https://nl.wikipedia.org/w/api.php?action=parse&page=Hoofdpagina&prop=text&format=json&origin=*';
-    const res = await fetch(url);
+    const res = await fetch('https://nl.wikipedia.org/w/api.php?action=parse&page=Hoofdpagina&prop=text&format=json&origin=*');
     if (!res.ok) throw new Error('Kon Wikipedia hoofdpagina niet ophalen');
     const data = await res.json();
+    const doc = new DOMParser().parseFromString(data.parse.text['*'], 'text/html');
 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(data.parse.text['*'], 'text/html');
-
-    let artikelTitel = null;
-
+    let titel = null;
     const uitgelichtDiv = doc.querySelector('#mp-uitgelicht');
     if (uitgelichtDiv) {
-      const eersteLink = uitgelichtDiv.querySelector('a[href^="/wiki/"]:not([href*=":"])');
-      if (eersteLink) {
-        artikelTitel = decodeURIComponent(eersteLink.getAttribute('href').replace('/wiki/', '').replace(/_/g, ' '));
+      const link = uitgelichtDiv.querySelector('a[href^="/wiki/"]:not([href*=":"])');
+      if (link) titel = decodeURIComponent(link.getAttribute('href').replace('/wiki/', '').replace(/_/g, ' '));
+    }
+
+    if (!titel) {
+      for (const link of doc.querySelectorAll('a[href^="/wiki/"]:not([href*=":"])')) {
+        const t = decodeURIComponent(link.getAttribute('href').replace('/wiki/', '').replace(/_/g, ' '));
+        if (t && t !== 'Hoofdpagina' && link.textContent.length > 3) { titel = t; break; }
       }
     }
 
-    if (!artikelTitel) {
-      const alleLinks = doc.querySelectorAll('a[href^="/wiki/"]:not([href*=":"])');
-      for (const link of alleLinks) {
-        const titel = decodeURIComponent(link.getAttribute('href').replace('/wiki/', '').replace(/_/g, ' '));
-        if (titel && titel !== 'Hoofdpagina' && link.textContent.length > 3) {
-          artikelTitel = titel;
-          break;
-        }
-      }
-    }
-
-    if (!artikelTitel) throw new Error('Kon het uitgelichte artikel niet vinden op de hoofdpagina');
-    return artikelTitel;
+    if (!titel) throw new Error('Kon het uitgelichte artikel niet vinden');
+    return titel;
   }
 
-  // ── Wikipedia: haal volledige tekst op ──
   async function haalVolledigeTekst(titel) {
     const url = `https://nl.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titel)}&prop=extracts&explaintext=true&format=json&origin=*`;
     const res = await fetch(url);
     if (!res.ok) throw new Error('Kon het artikel niet ophalen');
     const data = await res.json();
-
-    const pages = data.query.pages;
-    const page = Object.values(pages)[0];
+    const page = Object.values(data.query.pages)[0];
     if (!page || page.missing) throw new Error(`Artikel "${titel}" niet gevonden`);
-
-    return {
-      titel: page.title,
-      tekst: page.extract
-    };
+    return { titel: page.title, tekst: page.extract };
   }
 
-  // ── Gemini: verwerk Wikipedia tekst naar les ──
+  // ════════════════════════════════════════
+  // GEMINI
+  // ════════════════════════════════════════
   async function verwerkMetGemini(titel, tekst) {
-    // Tekst inkorten als die te lang is
     const ingekorte = tekst.length > MAX_TEKST_LENGTE
-      ? tekst.slice(0, MAX_TEKST_LENGTE) + '\n\n[tekst ingekort vanwege lengte]'
+      ? tekst.slice(0, MAX_TEKST_LENGTE) + '\n\n[tekst ingekort]'
       : tekst;
 
     const prompt = `Je bent een professionele schrijver en leraar die Wikipedia-artikelen omzet naar heldere, boeiende lessen.
@@ -433,14 +639,14 @@ JOUW TAAK:
 1. Verwerk dit artikel tot een hapbare les in goed, helder Nederlands
 2. Bepaal zelf hoeveel secties nodig zijn (minimaal 3, maximaal 6) op basis van lengte en complexiteit
 3. Als het artikel uitgebreid linkt naar andere belangrijke concepten, mag dat concept een eigen sectie krijgen
-4. Schrijf elke sectietekst alsof je een enthousiaste maar heldere journalist bent — geen droge opsommingen
-5. Voeg een tijdlijn toe ALS het artikel duidelijke historische gebeurtenissen bevat (anders weglaat je het tijdlijn-veld)
+4. Schrijf elke sectietekst alsof je een enthousiaste maar heldere journalist bent — geen droge opsommingen, echte alinea's
+5. Voeg een tijdlijn toe ALS het artikel duidelijke historische gebeurtenissen bevat (anders laat je het tijdlijn-veld weg)
 6. Maak per sectie 2-3 vragen: een mix van meerkeuze en open vragen
 
 VRAGENREGELS:
-- Meerkeuze: altijd 4 opties, precies 1 goed antwoord
+- Meerkeuze: altijd exact 4 opties, precies 1 goed antwoord. De waarde van "goed" moet exact overeenkomen met één van de opties
 - Open vragen: verwacht antwoord is kort (1-5 woorden), niet hoofdlettergevoelig
-- Vragen toetsen begrip, niet trivia
+- Vragen toetsen begrip, geen triviale details
 
 GEEF JE ANTWOORD UITSLUITEND ALS GELDIGE JSON — geen uitleg, geen markdown, geen backticks.
 
@@ -449,10 +655,8 @@ JSON STRUCTUUR:
   "secties": [
     {
       "titel": "Titel van de sectie",
-      "tekst": "De herschreven, leesbare tekst van deze sectie. Minimaal 3 alinea's.",
-      "tijdlijn": [
-        {"jaar": "1850", "gebeurtenis": "Wat er gebeurde"}
-      ],
+      "tekst": "De herschreven leesbare tekst. Gebruik \\n\\n tussen alinea's.",
+      "tijdlijn": [{"jaar": "1850", "gebeurtenis": "Wat er gebeurde"}],
       "vragen": [
         {
           "type": "meerkeuze",
@@ -478,129 +682,291 @@ ${ingekorte}`;
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 8192,
-        }
+        generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
       })
     });
 
     if (!res.ok) {
       const fout = await res.json().catch(() => ({}));
-      const bericht = fout?.error?.message || `Gemini API fout (${res.status})`;
-      throw new Error(bericht);
+      throw new Error(fout?.error?.message || `Gemini API fout (${res.status})`);
     }
 
     const data = await res.json();
-    const ruweText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!ruweText) throw new Error('Gemini gaf geen bruikbaar antwoord terug');
+    const ruwe = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!ruwe) throw new Error('Gemini gaf geen antwoord terug');
 
-    // JSON parsen — verwijder eventuele markdown backticks
-    const schoon = ruweText
-      .replace(/```json\s*/gi, '')
-      .replace(/```\s*/g, '')
-      .trim();
-
+    const schoon = ruwe.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
     try {
       return JSON.parse(schoon);
-    } catch (e) {
-      console.error('Ruwe Gemini output:', ruweText);
+    } catch {
+      console.error('Ruwe Gemini output:', ruwe);
       throw new Error('Gemini gaf geen geldige JSON terug. Zie console voor details.');
     }
   }
 
-  // ── Debug weergave van de Gemini output ──
-  function toonDebugOutput(titel, lesData) {
-    document.getElementById('debug-titel').textContent = titel;
-
-    const sectiesEl = document.getElementById('debug-secties');
-    sectiesEl.innerHTML = '';
-
-    lesData.secties.forEach((sectie, i) => {
-      const card = document.createElement('div');
-      card.className = 'sectie-card';
-
-      // Tijdlijn HTML
-      let tijdlijnHtml = '';
-      if (sectie.tijdlijn && sectie.tijdlijn.length > 0) {
-        tijdlijnHtml = `<div style="margin-bottom:0.75rem;">
-          <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent2);margin-bottom:0.5rem;">Tijdlijn</div>
-          ${sectie.tijdlijn.map(t => `
-            <div class="tijdlijn-item">
-              <span class="tijdlijn-jaar">${t.jaar}</span>
-              <span>${t.gebeurtenis}</span>
-            </div>`).join('')}
-        </div>`;
-      }
-
-      // Vragen HTML
-      const vragenHtml = (sectie.vragen || []).map(v => `
-        <div class="vraag-item">
-          <span class="type-badge ${v.type}">${v.type}</span>
-          <div class="vraag-tekst">${v.vraag}</div>
-          ${v.type === 'meerkeuze'
-            ? `<div class="vraag-antwoord">✓ ${v.goed} &nbsp;|&nbsp; opties: ${v.opties.join(' / ')}</div>`
-            : `<div class="vraag-antwoord">✓ "${v.antwoord}"</div>`
-          }
-        </div>`).join('');
-
-      card.innerHTML = `
-        <h3>Sectie ${i + 1}: ${sectie.titel}</h3>
-        <p>${sectie.tekst.slice(0, 200)}${sectie.tekst.length > 200 ? '…' : ''}</p>
-        ${tijdlijnHtml}
-        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.5rem;">Vragen (${sectie.vragen?.length || 0})</div>
-        ${vragenHtml}
-      `;
-
-      sectiesEl.appendChild(card);
-    });
-
-    // Meta info
-    const totalVragen = lesData.secties.reduce((som, s) => som + (s.vragen?.length || 0), 0);
-    document.getElementById('debug-meta').textContent =
-      `✅ ${lesData.secties.length} secties | ${totalVragen} vragen gegenereerd | Klaar voor stap 3 (Les UI)`;
-
-    // Raw JSON
-    document.getElementById('raw-json').textContent = JSON.stringify(lesData, null, 2);
-
-    // Toon debug scherm
-    document.getElementById('homescreen').style.display = 'none';
-    document.getElementById('debug-wrap').classList.add('zichtbaar');
-  }
-
-  // ── Hoofdfunctie ──
+  // ════════════════════════════════════════
+  // HOOFDFUNCTIE — LES MAKEN
+  // ════════════════════════════════════════
   async function maakLes() {
     if (GEMINI_API_KEY === 'JOUW_API_KEY_HIER') {
-      toonFout('Vul eerst je Gemini API key in bovenaan de code (GEMINI_API_KEY)');
+      toonFout('Vul eerst je Gemini API key in bovenaan de code');
       return;
     }
 
-    const knop = document.getElementById('knop-les');
-    knop.disabled = true;
+    document.getElementById('knop-les').disabled = true;
     document.getElementById('fout-wrap').innerHTML = '';
 
     try {
       setStatus('Wikipedia hoofdpagina ophalen...', 10);
-      const artikelNaam = await haalUitgelichtArtikel();
+      const naam = await haalUitgelichtArtikel();
 
-      setStatus(`Artikel ophalen: "${artikelNaam}"...`, 30);
-      const { titel, tekst } = await haalVolledigeTekst(artikelNaam);
+      setStatus(`"${naam}" ophalen...`, 30);
+      const { titel, tekst } = await haalVolledigeTekst(naam);
+      artikelTitel = titel;
 
-      setStatus('Gemini verwerkt het artikel...', 55);
-      const lesData = await verwerkMetGemini(titel, tekst);
+      setStatus('Gemini verwerkt het artikel...', 45, true);
+      startSchijnVoortgang(45, 88);
+      lesData = await verwerkMetGemini(titel, tekst);
 
+      stopSchijnVoortgang();
       setStatus('Les klaar!', 100);
 
       setTimeout(() => {
         verbergStatus();
-        toonDebugOutput(titel, lesData);
+        startLes();
       }, 400);
 
     } catch (err) {
+      stopSchijnVoortgang();
       verbergStatus();
       toonFout(err.message);
-      knop.disabled = false;
     }
+  }
+
+  // ════════════════════════════════════════
+  // LES FLOW
+  // ════════════════════════════════════════
+  function updateVoortgangsbalk() {
+    const totaal = lesData.secties.length;
+    const pct = Math.round((huidigeSectie / totaal) * 100);
+    document.getElementById('les-voortgang-balk').style.width = pct + '%';
+  }
+
+  function startLes() {
+    document.getElementById('homescreen').style.display = 'none';
+    document.getElementById('les-voortgang').classList.add('zichtbaar');
+    document.getElementById('les-scherm').classList.add('zichtbaar');
+    huidigeSectie = 0;
+    antwoorden = [];
+    toonSectie(0);
+  }
+
+  function toonSectie(index) {
+    const sectie = lesData.secties[index];
+    const totaal = lesData.secties.length;
+
+    updateVoortgangsbalk();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Label
+    document.getElementById('sectie-label-tekst').textContent = artikelTitel;
+    document.getElementById('sectie-nummer-tekst').textContent = ` — deel ${index + 1} van ${totaal}`;
+
+    // Titel
+    document.getElementById('sectie-titel').textContent = sectie.titel;
+
+    // Tekst (alinea's splitsen op \n\n)
+    const tekstEl = document.getElementById('sectie-tekst');
+    tekstEl.innerHTML = '';
+    const alineas = sectie.tekst.split(/\n\n+/).filter(a => a.trim());
+    alineas.forEach(a => {
+      const p = document.createElement('p');
+      p.textContent = a.trim();
+      tekstEl.appendChild(p);
+    });
+
+    // Tijdlijn
+    const tijdlijnWrap = document.getElementById('tijdlijn-wrap');
+    const tijdlijnInhoud = document.getElementById('tijdlijn-inhoud');
+    if (sectie.tijdlijn && sectie.tijdlijn.length > 0) {
+      tijdlijnInhoud.innerHTML = sectie.tijdlijn.map(t =>
+        `<div class="tijdlijn-rij">
+          <span class="tijdlijn-jaar">${t.jaar}</span>
+          <span>${t.gebeurtenis}</span>
+        </div>`
+      ).join('');
+      tijdlijnWrap.style.display = 'block';
+    } else {
+      tijdlijnWrap.style.display = 'none';
+    }
+
+    // Reset vragen
+    document.getElementById('vragen-sectie').style.display = 'none';
+    document.getElementById('knop-gelezen-wrap').style.display = 'flex';
+    document.getElementById('knop-volgende').disabled = true;
+  }
+
+  function toonVragen() {
+    document.getElementById('knop-gelezen-wrap').style.display = 'none';
+    document.getElementById('vragen-sectie').style.display = 'block';
+
+    const sectie = lesData.secties[huidigeSectie];
+    const inhoud = document.getElementById('vragen-inhoud');
+    inhoud.innerHTML = '';
+
+    let beantwoord = 0;
+    const totaalVragen = sectie.vragen.length;
+
+    function checkAllesBeantwoord() {
+      beantwoord++;
+      if (beantwoord >= totaalVragen) {
+        document.getElementById('knop-volgende').disabled = false;
+      }
+    }
+
+    sectie.vragen.forEach((vraag, vi) => {
+      const blok = document.createElement('div');
+      blok.className = 'vraag-blok';
+
+      if (vraag.type === 'meerkeuze') {
+        blok.innerHTML = `
+          <div class="vraag-tekst">${vi + 1}. ${vraag.vraag}</div>
+          <div class="opties-grid" id="opties-${vi}">
+            ${vraag.opties.map(opt =>
+              `<button class="optie-knop" onclick="checkMeerkeuze(${vi}, '${opt.replace(/'/g, "\\'")}', this)">${opt}</button>`
+            ).join('')}
+          </div>
+          <div class="feedback" id="feedback-${vi}"></div>
+        `;
+      } else {
+        blok.innerHTML = `
+          <div class="vraag-tekst">${vi + 1}. ${vraag.vraag}</div>
+          <div class="open-invoer-wrap">
+            <input type="text" class="open-invoer" id="open-invoer-${vi}"
+              placeholder="Jouw antwoord..."
+              onkeydown="if(event.key==='Enter') checkOpen(${vi})"/>
+            <button class="open-invoer-knop" id="open-knop-${vi}" onclick="checkOpen(${vi})">Controleer</button>
+          </div>
+          <div class="feedback" id="feedback-${vi}"></div>
+        `;
+      }
+
+      // Sla de check-callback op per vraag
+      blok.dataset.vi = vi;
+      blok.dataset.type = vraag.type;
+      inhoud.appendChild(blok);
+    });
+
+    // Bewaar callbacks voor checkAllesBeantwoord
+    window._vraagCallbacks = sectie.vragen.map((v, vi) => ({ vi, beantwoord: false }));
+    window._checkBeantwoord = () => {
+      const alle = window._vraagCallbacks.every(v => v.beantwoord);
+      if (alle) document.getElementById('knop-volgende').disabled = false;
+    };
+
+    window.scrollTo({ top: document.getElementById('vragen-sectie').offsetTop - 80, behavior: 'smooth' });
+  }
+
+  // ── Fuzzy matching voor open vragen ──
+  function levenshtein(a, b) {
+    const m = a.length, n = b.length;
+    const d = Array.from({ length: m + 1 }, (_, i) =>
+      Array.from({ length: n + 1 }, (_, j) => i === 0 ? j : j === 0 ? i : 0)
+    );
+    for (let i = 1; i <= m; i++)
+      for (let j = 1; j <= n; j++)
+        d[i][j] = a[i-1] === b[j-1] ? d[i-1][j-1]
+          : 1 + Math.min(d[i-1][j], d[i][j-1], d[i-1][j-1]);
+    return d[m][n];
+  }
+
+  function isGoedAntwoord(invoer, verwacht) {
+    const a = invoer.toLowerCase().trim();
+    const b = verwacht.toLowerCase().trim();
+    if (a === b) return true;
+    const maxFout = b.length <= 4 ? 1 : 2;
+    return levenshtein(a, b) <= maxFout;
+  }
+
+  // ── Meerkeuze check ──
+  function checkMeerkeuze(vi, gekozen, knop) {
+    const sectie = lesData.secties[huidigeSectie];
+    const vraag = sectie.vragen[vi];
+    const container = document.getElementById(`opties-${vi}`);
+    const feedback = document.getElementById(`feedback-${vi}`);
+
+    // Alle knoppen uitschakelen
+    container.querySelectorAll('.optie-knop').forEach(k => {
+      k.disabled = true;
+      if (k.textContent === vraag.goed) k.classList.add('gemist');
+    });
+
+    const goed = gekozen === vraag.goed;
+    knop.classList.remove('gemist');
+    knop.classList.add(goed ? 'goed' : 'fout');
+    feedback.textContent = goed ? '✓ Correct!' : `✗ Het juiste antwoord is: ${vraag.goed}`;
+    feedback.className = `feedback ${goed ? 'goed' : 'fout'}`;
+
+    antwoorden.push({ sectieIndex: huidigeSectie, vraagIndex: vi, goed });
+
+    if (!window._vraagCallbacks[vi].beantwoord) {
+      window._vraagCallbacks[vi].beantwoord = true;
+      window._checkBeantwoord();
+    }
+  }
+
+  // ── Open vraag check ──
+  function checkOpen(vi) {
+    const sectie = lesData.secties[huidigeSectie];
+    const vraag = sectie.vragen[vi];
+    const invoerEl = document.getElementById(`open-invoer-${vi}`);
+    const knop = document.getElementById(`open-knop-${vi}`);
+    const feedback = document.getElementById(`feedback-${vi}`);
+
+    const invoer = invoerEl.value.trim();
+    if (!invoer) return;
+
+    const goed = isGoedAntwoord(invoer, vraag.antwoord);
+
+    invoerEl.disabled = true;
+    invoerEl.classList.add(goed ? 'goed' : 'fout');
+    knop.disabled = true;
+    feedback.textContent = goed ? '✓ Correct!' : `✗ Het antwoord was: ${vraag.antwoord}`;
+    feedback.className = `feedback ${goed ? 'goed' : 'fout'}`;
+
+    antwoorden.push({ sectieIndex: huidigeSectie, vraagIndex: vi, goed });
+
+    if (!window._vraagCallbacks[vi].beantwoord) {
+      window._vraagCallbacks[vi].beantwoord = true;
+      window._checkBeantwoord();
+    }
+  }
+
+  // ── Volgende sectie ──
+  function volgendeSectie() {
+    huidigeSectie++;
+    if (huidigeSectie >= lesData.secties.length) {
+      toonKlaarScherm();
+    } else {
+      toonSectie(huidigeSectie);
+    }
+  }
+
+  // ── Klaar scherm ──
+  function toonKlaarScherm() {
+    document.getElementById('les-scherm').classList.remove('zichtbaar');
+    document.getElementById('les-voortgang-balk').style.width = '100%';
+
+    const totaal = antwoorden.length;
+    const goed = antwoorden.filter(a => a.goed).length;
+    const pct = totaal > 0 ? Math.round((goed / totaal) * 100) : 0;
+
+    document.getElementById('klaar-stats').innerHTML =
+      `Je beantwoordde <strong>${goed} van de ${totaal} vragen</strong> goed (${pct}%).<br/>
+      De vragen komen de komende dagen terug via spaced repetition.`;
+
+    document.getElementById('klaar-scherm').classList.add('zichtbaar');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 </script>
 
