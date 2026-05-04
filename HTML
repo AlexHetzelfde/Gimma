@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wiki Leerapp</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #0f0f0f;
+      --bg2:       #1a1a1a;
+      --bg3:       #242424;
+      --border:    #2e2e2e;
+      --text:      #e8e3db;
+      --muted:     #7a7570;
+      --accent:    #c8a96e;
+      --accent2:   #8fb5a0;
+      --error:     #c46a5a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-family: 'Lora', serif;
+      font-size: 1.4rem;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+
+    .logo span {
+      color: var(--muted);
+      font-weight: 400;
+      font-size: 0.9rem;
+      margin-left: 0.75rem;
+    }
+
+    .datum {
+      font-size: 0.8rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* ── Homescreen ── */
+    #homescreen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1.5rem;
+      gap: 2rem;
+    }
+
+    .hero-tekst {
+      text-align: center;
+    }
+
+    .hero-tekst h1 {
+      font-family: 'Lora', serif;
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 600;
+      line-height: 1.2;
+      margin-bottom: 0.75rem;
+    }
+
+    .hero-tekst p {
+      color: var(--muted);
+      font-size: 1rem;
+      max-width: 420px;
+    }
+
+    .knop-primair {
+      background: var(--accent);
+      color: #0f0f0f;
+      border: none;
+      padding: 1rem 2.5rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 500;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      letter-spacing: 0.01em;
+    }
+
+    .knop-primair:hover { opacity: 0.85; transform: translateY(-1px); }
+    .knop-primair:active { transform: translateY(0); }
+    .knop-primair:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* ── Status / laadbalk ── */
+    #status-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    #status-wrap.zichtbaar { display: flex; }
+
+    .laadbalk-bg {
+      width: 100%;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .laadbalk-voortgang {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    #status-tekst {
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* ── Artikel weergave (stap 1 debug) ── */
+    #artikel-wrap {
+      display: none;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+      width: 100%;
+    }
+
+    #artikel-wrap.zichtbaar { display: block; }
+
+    .artikel-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+
+    #artikel-titel {
+      font-family: 'Lora', serif;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 600;
+      line-height: 1.25;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    #artikel-tekst {
+      font-family: 'Lora', serif;
+      font-size: 1.05rem;
+      line-height: 1.85;
+      color: var(--text);
+      white-space: pre-wrap;
+      background: var(--bg2);
+      padding: 1.5rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+
+    .artikel-meta {
+      margin-top: 1rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    /* ── Foutmelding ── */
+    .fout {
+      background: rgba(196, 106, 90, 0.1);
+      border: 1px solid var(--error);
+      color: var(--error);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      max-width: 500px;
+      text-align: center;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg2); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">WikiLeer <span>dagelijks leren</span></div>
+  <div class="datum" id="header-datum"></div>
+</header>
+
+<div id="homescreen">
+  <div class="hero-tekst">
+    <h1>Leer iets nieuws<br/>vandaag</h1>
+    <p>Het uitgelichte artikel van de Nederlandse Wikipedia, omgezet naar een les met vragen en dagelijkse herhaling.</p>
+  </div>
+
+  <button class="knop-primair" id="knop-les" onclick="maakLes()">
+    Maak les van vandaag
+  </button>
+
+  <div id="status-wrap">
+    <div id="status-tekst">Bezig...</div>
+    <div class="laadbalk-bg">
+      <div class="laadbalk-voortgang" id="laadbalk"></div>
+    </div>
+  </div>
+
+  <div id="fout-wrap"></div>
+</div>
+
+<div id="artikel-wrap">
+  <div class="artikel-label">Uitgelicht artikel van vandaag</div>
+  <div id="artikel-titel"></div>
+  <div id="artikel-tekst"></div>
+  <div class="artikel-meta" id="artikel-meta"></div>
+</div>
+
+<script>
+  // ── Datum in header ──
+  const nu = new Date();
+  document.getElementById('header-datum').textContent =
+    nu.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  // ── Status helpers ──
+  function setStatus(tekst, voortgang) {
+    document.getElementById('status-wrap').classList.add('zichtbaar');
+    document.getElementById('status-tekst').textContent = tekst;
+    document.getElementById('laadbalk').style.width = voortgang + '%';
+  }
+
+  function verbergStatus() {
+    document.getElementById('status-wrap').classList.remove('zichtbaar');
+  }
+
+  function toonFout(bericht) {
+    document.getElementById('fout-wrap').innerHTML =
+      `<div class="fout">⚠️ ${bericht}</div>`;
+  }
+
+  // ── Wikipedia: haal naam uitgelicht artikel op ──
+  async function haalUitgelichtArtikel() {
+    // Haal de hoofdpagina op als HTML via de parse API
+    const url = 'https://nl.wikipedia.org/w/api.php?action=parse&page=Hoofdpagina&prop=text&format=json&origin=*';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Kon Wikipedia hoofdpagina niet ophalen');
+    const data = await res.json();
+
+    // Parse de HTML van de hoofdpagina
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(data.parse.text['*'], 'text/html');
+
+    // Zoek de uitgelicht sectie — op de NL Wikipedia heeft dit div id="mp-uitgelicht"
+    let artikelTitel = null;
+
+    // Methode 1: zoek div met id mp-uitgelicht
+    const uitgelichtDiv = doc.querySelector('#mp-uitgelicht');
+    if (uitgelichtDiv) {
+      // Eerste interne Wikipedia link in die sectie = het uitgelichte artikel
+      const eersteLink = uitgelichtDiv.querySelector('a[href^="/wiki/"]:not([href*=":"])');
+      if (eersteLink) {
+        artikelTitel = decodeURIComponent(eersteLink.getAttribute('href').replace('/wiki/', '').replace(/_/g, ' '));
+      }
+    }
+
+    // Methode 2: fallback — zoek de "Lees verder" link in een uitgelicht-achtige sectie
+    if (!artikelTitel) {
+      const alleLinks = doc.querySelectorAll('a[href^="/wiki/"]:not([href*=":"])');
+      // Pak de eerste substantiële interne link (niet Hoofdpagina zelf)
+      for (const link of alleLinks) {
+        const titel = decodeURIComponent(link.getAttribute('href').replace('/wiki/', '').replace(/_/g, ' '));
+        if (titel && titel !== 'Hoofdpagina' && link.textContent.length > 3) {
+          artikelTitel = titel;
+          break;
+        }
+      }
+    }
+
+    if (!artikelTitel) throw new Error('Kon het uitgelichte artikel niet vinden op de hoofdpagina');
+    return artikelTitel;
+  }
+
+  // ── Wikipedia: haal volledige tekst op ──
+  async function haalVolledigeTekst(titel) {
+    const url = `https://nl.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titel)}&prop=extracts&explaintext=true&format=json&origin=*`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Kon het artikel niet ophalen');
+    const data = await res.json();
+
+    const pages = data.query.pages;
+    const page = Object.values(pages)[0];
+    if (!page || page.missing) throw new Error(`Artikel "${titel}" niet gevonden`);
+
+    return {
+      titel: page.title,
+      tekst: page.extract
+    };
+  }
+
+  // ── Hoofdfunctie ──
+  async function maakLes() {
+    const knop = document.getElementById('knop-les');
+    knop.disabled = true;
+    document.getElementById('fout-wrap').innerHTML = '';
+
+    try {
+      setStatus('Wikipedia hoofdpagina ophalen...', 15);
+      const artikelNaam = await haalUitgelichtArtikel();
+
+      setStatus(`Artikel ophalen: "${artikelNaam}"...`, 45);
+      const { titel, tekst } = await haalVolledigeTekst(artikelNaam);
+
+      setStatus('Artikel geladen!', 100);
+
+      // Toon het artikel (debug weergave voor stap 1)
+      setTimeout(() => {
+        verbergStatus();
+        document.getElementById('homescreen').style.display = 'none';
+
+        document.getElementById('artikel-titel').textContent = titel;
+        document.getElementById('artikel-tekst').textContent = tekst;
+        document.getElementById('artikel-meta').textContent =
+          `${tekst.length.toLocaleString('nl-NL')} tekens opgehaald — klaar voor stap 2 (Gemini)`;
+
+        document.getElementById('artikel-wrap').classList.add('zichtbaar');
+      }, 500);
+
+    } catch (err) {
+      verbergStatus();
+      toonFout(err.message);
+      knop.disabled = false;
+    }
+  }
+</script>
+
+</body>
+</html>
