@@ -29,6 +29,55 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      transition: background 0.3s;
+    }
+
+    /* ════════════════════════════════════════
+       LAYOUT MODES
+    ════════════════════════════════════════ */
+
+    /* Telefoon-modus: body toont een gekanteld "frame" */
+    body.layout-telefoon {
+      background: #080808;
+      align-items: center;
+    }
+
+    body.layout-telefoon #app-shell {
+      width: 390px;
+      max-width: 100vw;
+      min-height: 100vh;
+      background: var(--bg);
+      box-shadow: 0 0 0 1px #2a2a2a, 0 20px 80px rgba(0,0,0,0.8);
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Toon het telefoon-notch decoratief element */
+    body.layout-telefoon #app-shell::before {
+      content: '';
+      display: block;
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 28px;
+      background: #080808;
+      border-radius: 0 0 18px 18px;
+      z-index: 100;
+    }
+
+    body.layout-telefoon header {
+      padding-top: 2rem; /* ruimte voor notch */
+    }
+
+    #app-shell {
+      width: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     /* ── Header ── */
@@ -60,7 +109,7 @@
     .header-rechts {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.6rem;
     }
 
     .datum {
@@ -70,8 +119,68 @@
       text-transform: uppercase;
     }
 
+    /* ── Layout Toggle ── */
+    .layout-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .layout-knop {
+      background: none;
+      border: none;
+      color: var(--muted);
+      width: 34px;
+      height: 30px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+      position: relative;
+    }
+
+    .layout-knop:first-child {
+      border-right: 1px solid var(--border);
+    }
+
+    .layout-knop.actief {
+      background: var(--bg2);
+      color: var(--accent);
+    }
+
+    .layout-knop:hover:not(.actief) {
+      color: var(--text);
+      background: rgba(255,255,255,0.04);
+    }
+
+    /* Tooltip */
+    .layout-knop::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.7rem;
+      padding: 3px 7px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .layout-knop:hover::after { opacity: 1; }
+
     .key-knop-header {
-      display: none;
       background: none;
       border: 1px solid var(--border);
       color: var(--muted);
@@ -80,6 +189,7 @@
       border-radius: 4px;
       cursor: pointer;
       font-size: 0.85rem;
+      display: flex;
       align-items: center;
       justify-content: center;
       transition: border-color 0.2s, color 0.2s;
@@ -175,6 +285,14 @@
       font-size: 0.85rem;
       color: var(--fout);
       min-height: 1.2rem;
+    }
+
+    .key-succes {
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      color: var(--goed);
+      min-height: 1.2rem;
+      transition: opacity 0.4s;
     }
 
     /* ════════════════════════════════════════
@@ -313,7 +431,7 @@
     }
 
     /* ════════════════════════════════════════
-       SR REVIEW (homescreen herhaalvragen)
+       SR REVIEW
     ════════════════════════════════════════ */
     .sr-review-wrap {
       background: var(--bg2);
@@ -353,7 +471,6 @@
       line-height: 1.4;
     }
 
-    /* Mini sterkte-badge per vraag */
     .sr-sterkte-balk-wrap {
       margin-bottom: 0.6rem;
       display: flex;
@@ -617,7 +734,7 @@
       padding: 0.8rem 1rem;
       border-radius: 6px;
       font-family: 'DM Sans', sans-serif;
-      font-size: 1rem; /* ≥16px → voorkomt zoom op iOS */
+      font-size: 1rem;
       outline: none;
       transition: border-color 0.15s;
     }
@@ -649,7 +766,7 @@
       justify-content: flex-end;
     }
 
-    /* ── Afsluiting scherm ── */
+    /* ── Klaar scherm ── */
     #klaar-scherm {
       display: none;
       flex: 1;
@@ -679,6 +796,15 @@
 
     .klaar-stats strong { color: var(--accent); }
 
+    /* ── Voortgangsbalk fade-out ── */
+    #les-voortgang {
+      transition: opacity 0.6s ease;
+    }
+
+    #les-voortgang.vervaag {
+      opacity: 0;
+    }
+
     /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
@@ -687,149 +813,238 @@
     /* ── Mobiel ── */
     @media (max-width: 480px) {
       header { padding: 1rem 1.25rem; }
+      .datum { display: none; }
       .key-kaart { padding: 1.75rem 1.25rem; }
       .sr-review-wrap { padding: 1.25rem; }
       .knop-primair { padding: 0.85rem 1.5rem; font-size: 0.95rem; }
       .optie-knop { padding: 0.9rem 1rem; font-size: 0.9rem; }
+      .layout-toggle { display: none; } /* toggle niet zinvol op echt mobiel */
+    }
+
+    /* ── Telefoon modus extra tweaks ── */
+    body.layout-telefoon .sectie-titel {
+      font-size: 1.4rem;
+    }
+
+    body.layout-telefoon .sectie-tekst {
+      font-size: 1rem;
+      line-height: 1.75;
+    }
+
+    body.layout-telefoon #les-scherm {
+      padding: 2rem 1.25rem 5rem;
+    }
+
+    body.layout-telefoon header {
+      padding-left: 1.25rem;
+      padding-right: 1.25rem;
+    }
+
+    body.layout-telefoon .datum {
+      display: none;
+    }
+
+    body.layout-telefoon #homescreen {
+      padding: 2rem 1.25rem;
+    }
+
+    /* Telefoon-modus: "scherm" indicator in header */
+    .layout-indicator {
+      display: none;
+    }
+
+    body.layout-telefoon .layout-indicator {
+      display: block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    /* Toast notificatie */
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--accent2);
+      font-size: 0.85rem;
+      padding: 0.65rem 1.2rem;
+      border-radius: 6px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      white-space: nowrap;
+      z-index: 200;
+    }
+
+    #toast.zichtbaar {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
   </style>
 </head>
 <body>
 
-<div id="les-voortgang"><div id="les-voortgang-balk"></div></div>
+<!-- Toast -->
+<div id="toast"></div>
 
-<header>
-  <div class="logo">WikiLeer <span>dagelijks leren</span></div>
-  <div class="header-rechts">
-    <div class="datum" id="header-datum"></div>
-    <button class="key-knop-header" id="key-knop-header" onclick="toonKeyModal()" title="API key wijzigen">⚙</button>
-  </div>
-</header>
+<div id="app-shell">
 
-<!-- ═══ KEY SCHERM ═══ -->
-<div id="key-scherm">
-  <div class="key-kaart">
-    <h2>Welkom bij WikiLeer</h2>
-    <p>
-      Om lessen te genereren heb je een gratis Gemini API key nodig.<br/>
-      Haal hem op via <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a> — geen creditcard nodig.
-      De key wordt alleen lokaal opgeslagen in jouw browser, nooit verstuurd naar een server.
-    </p>
-    <div class="key-invoer-wrap">
-      <input
-        type="password"
-        class="key-invoer"
-        id="key-invoer-setup"
-        placeholder="AIza..."
-        onkeydown="if(event.key==='Enter') slaKeyOpEnStart()"
-      />
-      <button class="knop-primair" onclick="slaKeyOpEnStart()">Opslaan</button>
+  <div id="les-voortgang"><div id="les-voortgang-balk"></div></div>
+
+  <header>
+    <div class="logo">WikiLeer <span>dagelijks leren</span></div>
+    <div class="header-rechts">
+      <div class="datum" id="header-datum"></div>
+
+      <!-- Layout toggle -->
+      <div class="layout-toggle" id="layout-toggle">
+        <button class="layout-knop actief" id="knop-desktop" data-tip="Desktop" onclick="setLayout('desktop')" title="Desktop layout">
+          🖥
+          <span class="layout-indicator"></span>
+        </button>
+        <button class="layout-knop" id="knop-telefoon" data-tip="Telefoon" onclick="setLayout('telefoon')" title="Telefoon layout">
+          📱
+          <span class="layout-indicator"></span>
+        </button>
+      </div>
+
+      <button class="key-knop-header" id="key-knop-header" onclick="toonKeyModal()" title="API key wijzigen" style="display:none">⚙</button>
     </div>
-    <div class="key-fout" id="key-fout-setup"></div>
-  </div>
-</div>
+  </header>
 
-<!-- ═══ KEY MODAL ═══ -->
-<div id="key-modal" onclick="if(event.target===this) sluitKeyModal()">
-  <div class="modal-kaart">
-    <h3>API key wijzigen</h3>
-    <p>Je huidige key wordt vervangen. De les-cache van vandaag blijft bewaard.</p>
-    <div class="key-invoer-wrap">
-      <input
-        type="password"
-        class="key-invoer"
-        id="key-invoer-modal"
-        placeholder="AIza..."
-        onkeydown="if(event.key==='Enter') slaKeyOpViaModal()"
-      />
-    </div>
-    <div class="key-fout" id="key-fout-modal"></div>
-    <div class="modal-acties">
-      <button class="knop-primair" onclick="slaKeyOpViaModal()">Opslaan</button>
-      <button class="knop-secundair" onclick="sluitKeyModal()">Annuleren</button>
+  <!-- ═══ KEY SCHERM ═══ -->
+  <div id="key-scherm">
+    <div class="key-kaart">
+      <h2>Welkom bij WikiLeer</h2>
+      <p>
+        Om lessen te genereren heb je een gratis Gemini API key nodig.<br/>
+        Haal hem op via <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a> — geen creditcard nodig.
+        De key wordt alleen lokaal opgeslagen in jouw browser, nooit verstuurd naar een server.
+      </p>
+      <div class="key-invoer-wrap">
+        <input
+          type="password"
+          class="key-invoer"
+          id="key-invoer-setup"
+          placeholder="AIza..."
+          onkeydown="if(event.key==='Enter') slaKeyOpEnStart()"
+        />
+        <button class="knop-primair" onclick="slaKeyOpEnStart()">Opslaan</button>
+      </div>
+      <div class="key-fout" id="key-fout-setup"></div>
     </div>
   </div>
-</div>
 
-<!-- ═══ HOMESCREEN ═══ -->
-<div id="homescreen">
-  <div class="hero-tekst">
-    <h1>Leer iets nieuws<br/>vandaag</h1>
-    <p>Het uitgelichte artikel van de Nederlandse Wikipedia, omgezet naar een les met vragen en dagelijkse herhaling.</p>
-  </div>
-
-  <!-- SR Review sectie — zichtbaar als er herhaalvragen zijn -->
-  <div id="sr-review-wrap" class="sr-review-wrap" style="display:none">
-    <div class="sr-review-header">
-      <div class="sr-review-icoon">🔁</div>
-      <div>
-        <div class="sr-review-titel">Dagelijkse herhaling</div>
-        <div class="sr-review-sub" id="sr-review-sub">Laden...</div>
+  <!-- ═══ KEY MODAL ═══ -->
+  <div id="key-modal" onclick="if(event.target===this) sluitKeyModal()">
+    <div class="modal-kaart">
+      <h3>API key wijzigen</h3>
+      <p>Je huidige key wordt vervangen. De les-cache van vandaag blijft bewaard.</p>
+      <div class="key-invoer-wrap">
+        <input
+          type="password"
+          class="key-invoer"
+          id="key-invoer-modal"
+          placeholder="AIza..."
+          onkeydown="if(event.key==='Enter') slaKeyOpViaModal()"
+        />
+      </div>
+      <div class="key-fout" id="key-fout-modal"></div>
+      <div class="modal-acties">
+        <button class="knop-primair" onclick="slaKeyOpViaModal()">Opslaan</button>
+        <button class="knop-secundair" onclick="sluitKeyModal()">Annuleren</button>
       </div>
     </div>
-    <div id="sr-vragen-inhoud"></div>
-    <!-- Verschijnt pas als alle vragen beantwoord zijn -->
-    <div id="sr-klaar-balk" class="sr-klaar-balk" style="display:none">
-      <div class="sr-score-tekst" id="sr-score-tekst"></div>
-      <button class="knop-primair" onclick="afrondSRReview()">Doorgaan naar les →</button>
+  </div>
+
+  <!-- ═══ HOMESCREEN ═══ -->
+  <div id="homescreen">
+    <div class="hero-tekst">
+      <h1>Leer iets nieuws<br/>vandaag</h1>
+      <p>Het uitgelichte artikel van de Nederlandse Wikipedia, omgezet naar een les met vragen en dagelijkse herhaling.</p>
     </div>
-  </div>
 
-  <div id="cache-melding" class="cache-melding" style="display:none"></div>
-
-  <button class="knop-primair" id="knop-les" onclick="maakLes()" style="display:none">
-    Maak les van vandaag
-  </button>
-
-  <div id="status-wrap">
-    <div id="status-tekst">Bezig...</div>
-    <div class="laadbalk-bg">
-      <div class="laadbalk-voortgang" id="laadbalk"></div>
-      <div class="laadbalk-shimmer" id="laadbalk-shimmer" style="display:none"></div>
+    <!-- SR Review sectie -->
+    <div id="sr-review-wrap" class="sr-review-wrap" style="display:none">
+      <div class="sr-review-header">
+        <div class="sr-review-icoon">🔁</div>
+        <div>
+          <div class="sr-review-titel">Dagelijkse herhaling</div>
+          <div class="sr-review-sub" id="sr-review-sub">Laden...</div>
+        </div>
+      </div>
+      <div id="sr-vragen-inhoud"></div>
+      <div id="sr-klaar-balk" class="sr-klaar-balk" style="display:none">
+        <div class="sr-score-tekst" id="sr-score-tekst"></div>
+        <button class="knop-primair" onclick="afrondSRReview()">Doorgaan naar les →</button>
+      </div>
     </div>
+
+    <div id="cache-melding" class="cache-melding" style="display:none"></div>
+
+    <button class="knop-primair" id="knop-les" onclick="maakLes()" style="display:none">
+      Maak les van vandaag
+    </button>
+
+    <div id="status-wrap">
+      <div id="status-tekst">Bezig...</div>
+      <div class="laadbalk-bg">
+        <div class="laadbalk-voortgang" id="laadbalk"></div>
+        <div class="laadbalk-shimmer" id="laadbalk-shimmer" style="display:none"></div>
+      </div>
+    </div>
+
+    <div id="fout-wrap"></div>
   </div>
 
-  <div id="fout-wrap"></div>
-</div>
+  <!-- ═══ LES SCHERM ═══ -->
+  <div id="les-scherm">
+    <div class="sectie-label">
+      <span id="sectie-label-tekst">Sectie</span>
+      <span class="sectie-nummer" id="sectie-nummer-tekst"></span>
+    </div>
+    <div class="sectie-titel" id="sectie-titel"></div>
+    <div class="sectie-tekst" id="sectie-tekst"></div>
+    <div id="tijdlijn-wrap" class="tijdlijn-wrap" style="display:none">
+      <div class="tijdlijn-kop">Tijdlijn</div>
+      <div id="tijdlijn-inhoud"></div>
+    </div>
 
-<!-- ═══ LES SCHERM ═══ -->
-<div id="les-scherm">
-  <div class="sectie-label">
-    <span id="sectie-label-tekst">Sectie</span>
-    <span class="sectie-nummer" id="sectie-nummer-tekst"></span>
-  </div>
-  <div class="sectie-titel" id="sectie-titel"></div>
-  <div class="sectie-tekst" id="sectie-tekst"></div>
-  <div id="tijdlijn-wrap" class="tijdlijn-wrap" style="display:none">
-    <div class="tijdlijn-kop">Tijdlijn</div>
-    <div id="tijdlijn-inhoud"></div>
-  </div>
+    <div id="vragen-sectie" style="display:none">
+      <hr class="vragen-scheiding"/>
+      <div class="vragen-kop">Test jezelf</div>
+      <div id="vragen-inhoud"></div>
+      <div class="sectie-nav">
+        <button class="knop-primair" id="knop-volgende" onclick="volgendeSectie()" disabled>
+          Volgende →
+        </button>
+      </div>
+    </div>
 
-  <div id="vragen-sectie" style="display:none">
-    <hr class="vragen-scheiding"/>
-    <div class="vragen-kop">Test jezelf</div>
-    <div id="vragen-inhoud"></div>
-    <div class="sectie-nav">
-      <button class="knop-primair" id="knop-volgende" onclick="volgendeSectie()" disabled>
-        Volgende →
+    <div class="sectie-nav" id="knop-gelezen-wrap">
+      <button class="knop-secundair" onclick="toonVragen()">
+        Ik heb dit gelezen →
       </button>
     </div>
   </div>
 
-  <div class="sectie-nav" id="knop-gelezen-wrap">
-    <button class="knop-secundair" onclick="toonVragen()">
-      Ik heb dit gelezen →
-    </button>
+  <!-- ═══ KLAAR SCHERM ═══ -->
+  <div id="klaar-scherm">
+    <div class="klaar-icoon">🎓</div>
+    <div class="klaar-titel">Les voltooid!</div>
+    <div class="klaar-stats" id="klaar-stats"></div>
+    <button class="knop-secundair" onclick="location.reload()">Terug naar begin</button>
   </div>
-</div>
 
-<!-- ═══ KLAAR SCHERM ═══ -->
-<div id="klaar-scherm">
-  <div class="klaar-icoon">🎓</div>
-  <div class="klaar-titel">Les voltooid!</div>
-  <div class="klaar-stats" id="klaar-stats"></div>
-  <button class="knop-secundair" onclick="location.reload()">Terug naar begin</button>
-</div>
+</div><!-- /app-shell -->
 
 <script>
   // ════════════════════════════════════════
@@ -838,10 +1053,38 @@
   const LS_KEY          = 'wikileer_api_key';
   const LS_SR           = 'wikileer_sr';
   const LS_LAST_SESSION = 'wikileer_last_session';
+  const LS_LAYOUT       = 'wikileer_layout';
   const MAX_TEKST       = 6000;
 
-  // Memory Shield interval mapping (in dagen)
   const INTERVALS = [1, 2, 4, 7, 14, 30];
+
+  // ════════════════════════════════════════
+  // LAYOUT TOGGLE
+  // ════════════════════════════════════════
+  function setLayout(modus) {
+    localStorage.setItem(LS_LAYOUT, modus);
+    document.body.classList.toggle('layout-telefoon', modus === 'telefoon');
+    document.getElementById('knop-desktop').classList.toggle('actief', modus === 'desktop');
+    document.getElementById('knop-telefoon').classList.toggle('actief', modus === 'telefoon');
+  }
+
+  function herstelLayout() {
+    const opgeslagen = localStorage.getItem(LS_LAYOUT) || 'desktop';
+    setLayout(opgeslagen);
+  }
+
+  // ════════════════════════════════════════
+  // TOAST
+  // ════════════════════════════════════════
+  let toastTimer = null;
+
+  function toonToast(tekst, duur = 2500) {
+    const el = document.getElementById('toast');
+    el.textContent = tekst;
+    el.classList.add('zichtbaar');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('zichtbaar'), duur);
+  }
 
   // ════════════════════════════════════════
   // DATUM / TIJD HELPERS
@@ -909,11 +1152,6 @@
   // ════════════════════════════════════════
   // MEMORY SHIELD — SR ALGORITME
   // ════════════════════════════════════════
-
-  /**
-   * Geeft de maximale interval-stap terug op basis van huidige strength.
-   * Zwakke kennis blijft kort-cyclisch; sterke kennis kan verder vooruit.
-   */
   function getMaxStep(strength) {
     if (strength < 20) return 0;
     if (strength < 40) return 1;
@@ -923,12 +1161,6 @@
     return 5;
   }
 
-  /**
-   * Haalt de vragen op die vandaag herhaald moeten worden.
-   * - Eerste sessie van de dag → threshold = einde van vandaag (soepel)
-   * - Al een sessie gehad vandaag → threshold = nu (strikt)
-   * Gesorteerd op: laagste strength eerst, daarna langst overdue.
-   */
   function getDueItems() {
     const sr = haalSRData();
     const threshold = lastSessionToday() ? Date.now() : getEndOfDay();
@@ -937,25 +1169,11 @@
       .sort((a, b) => {
         const sA = a.strength ?? 20;
         const sB = b.strength ?? 20;
-        if (sA !== sB) return sA - sB;           // laagste strength eerst
-        return (a.next_due ?? 0) - (b.next_due ?? 0); // langst overdue eerste
+        if (sA !== sB) return sA - sB;
+        return (a.next_due ?? 0) - (b.next_due ?? 0);
       });
   }
 
-  /**
-   * Registreert een antwoord en past de SR-data aan.
-   *
-   * Nieuwe items starten op:  strength=20, interval_step=0, next_due=morgen
-   *
-   * Bij GOED antwoord:
-   *   streak++, strength+10 (max 100)
-   *   interval_step++ → gecapped op getMaxStep(strength)
-   *   next_due = nu + INTERVALS[interval_step] dagen
-   *
-   * Bij FOUT antwoord:
-   *   streak=0, strength*=0.5 (min 0)
-   *   interval_step=0, next_due=morgen
-   */
   function registreerAntwoord({ id, vraag, type, antwoordData, goed }) {
     const sr  = haalSRData();
     const idx = sr.findIndex(v => v.id === id);
@@ -963,7 +1181,6 @@
     const morgen = getTomorrow();
 
     if (idx === -1) {
-      // ── Nieuw item ──
       const basisStrength = 20;
       let strength      = goed ? Math.min(100, basisStrength + 10) : Math.max(0, Math.floor(basisStrength * 0.5));
       let interval_step = 0;
@@ -977,17 +1194,13 @@
       sr.push({
         id, vraag, type,
         ...antwoordData,
-        strength,
-        interval_step,
-        next_due,
+        strength, interval_step, next_due,
         streak:    goed ? 1 : 0,
         last_seen: now
       });
 
     } else {
-      // ── Bestaand item bijwerken ──
       const item = sr[idx];
-      // Antwoorddata verversen (opties kunnen in theorie wijzigen)
       Object.assign(item, antwoordData);
       item.last_seen = now;
 
@@ -1008,15 +1221,11 @@
     slaSRDataOp(sr);
   }
 
-  // Stabiel uniek ID per vraag
   function maakVraagId(artikelTitel, sectieIndex, vraagIndex) {
     const basis = artikelTitel.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 40);
     return `${basis}_s${sectieIndex}_v${vraagIndex}`;
   }
 
-  // ════════════════════════════════════════
-  // KLEUR OP BASIS VAN STRENGTH
-  // ════════════════════════════════════════
   function sterktekleur(strength) {
     if (strength < 35) return 'var(--fout)';
     if (strength < 65) return 'var(--accent)';
@@ -1030,6 +1239,9 @@
     new Date().toLocaleDateString('nl-NL', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
     });
+
+  // Herstel layout vóór render
+  herstelLayout();
 
   function init() {
     const key = haalKey();
@@ -1045,18 +1257,14 @@
     document.getElementById('key-knop-header').style.display = 'flex';
     document.getElementById('homescreen').classList.add('zichtbaar');
 
-    // Knoptekst op basis van cache
-    const cache = haalGecachedeLes();
+    const cache   = haalGecachedeLes();
     const knopLes = document.getElementById('knop-les');
     knopLes.textContent = cache ? 'Les van vandaag hervatten' : 'Maak les van vandaag';
 
-    // Check SR herhaalvragen
     const dueItems = getDueItems();
     if (dueItems.length > 0) {
-      // SR review eerst — les-knop en cache-melding worden daarna zichtbaar
       toonSRReview(dueItems);
     } else {
-      // Geen herhaalvragen: direct de les-knop tonen
       knopLes.style.display = '';
       if (cache) {
         const melding = document.getElementById('cache-melding');
@@ -1067,9 +1275,8 @@
   }
 
   // ════════════════════════════════════════
-  // SR REVIEW — HOMESCREEN HERHAALVRAGEN
+  // SR REVIEW
   // ════════════════════════════════════════
-
   function toonSRReview(dueItems) {
     const wrap = document.getElementById('sr-review-wrap');
     wrap.style.display = 'block';
@@ -1077,7 +1284,7 @@
     document.getElementById('sr-review-sub').textContent =
       `${dueItems.length} vraag${dueItems.length !== 1 ? 'en' : ''} te herhalen`;
 
-    const inhoud  = document.getElementById('sr-vragen-inhoud');
+    const inhoud = document.getElementById('sr-vragen-inhoud');
     inhoud.innerHTML = '';
 
     const state = dueItems.map(() => ({ beantwoord: false, goed: false }));
@@ -1085,7 +1292,6 @@
     function checkAllesSR() {
       if (!state.every(s => s.beantwoord)) return;
 
-      // Toon scorebalk en "doorgaan" knop
       const goedAantal = state.filter(s => s.goed).length;
       const pct        = Math.round((goedAantal / dueItems.length) * 100);
       const scoreEl    = document.getElementById('sr-score-tekst');
@@ -1103,9 +1309,8 @@
       const blok = document.createElement('div');
       blok.className = 'vraag-blok';
 
-      // Kleine sterktemeter boven de vraag
-      const strength  = item.strength ?? 20;
-      const kleur     = sterktekleur(strength);
+      const strength = item.strength ?? 20;
+      const kleur    = sterktekleur(strength);
       const sterkteMeter = `
         <div class="sr-sterkte-balk-wrap">
           <span class="sr-sterkte-label">Sterkte</span>
@@ -1154,7 +1359,6 @@
         });
 
       } else {
-        // Open vraag
         blok.innerHTML = `
           ${sterkteMeter}
           <div class="vraag-tekst">${hi + 1}. ${item.vraag}</div>
@@ -1202,7 +1406,6 @@
     markSessionDone();
     document.getElementById('sr-review-wrap').style.display = 'none';
 
-    // Toon les-knop (en eventueel cache-melding)
     const cache   = haalGecachedeLes();
     const knopLes = document.getElementById('knop-les');
     knopLes.style.display = '';
@@ -1251,6 +1454,8 @@
     }
     slaKeyOp(invoer);
     sluitKeyModal();
+    // Bevestiging via toast
+    toonToast('✓ API key opgeslagen');
   }
 
   // ════════════════════════════════════════
@@ -1474,7 +1679,7 @@ ${ingekorte}`;
   // ════════════════════════════════════════
   // LES FLOW
   // ════════════════════════════════════════
-  let huidigeSectie   = 0;
+  let huidigeSectie    = 0;
   let sessieAntwoorden = [];
 
   function updateVoortgangsbalk() {
@@ -1484,7 +1689,9 @@ ${ingekorte}`;
 
   function startLes() {
     document.getElementById('homescreen').classList.remove('zichtbaar');
-    document.getElementById('les-voortgang').classList.add('zichtbaar');
+    const voortgang = document.getElementById('les-voortgang');
+    voortgang.classList.remove('vervaag');
+    voortgang.classList.add('zichtbaar');
     document.getElementById('les-scherm').classList.add('zichtbaar');
     huidigeSectie    = 0;
     sessieAntwoorden = [];
@@ -1523,9 +1730,9 @@ ${ingekorte}`;
       tijdlijnWrap.style.display = 'none';
     }
 
-    document.getElementById('vragen-sectie').style.display    = 'none';
+    document.getElementById('vragen-sectie').style.display     = 'none';
     document.getElementById('knop-gelezen-wrap').style.display = 'flex';
-    document.getElementById('knop-volgende').disabled         = true;
+    document.getElementById('knop-volgende').disabled          = true;
   }
 
   function toonVragen() {
@@ -1680,7 +1887,7 @@ ${ingekorte}`;
   }
 
   // ════════════════════════════════════════
-  // HERHALING — foute vragen opnieuw (within-session)
+  // HERHALING
   // ════════════════════════════════════════
   let herhalingsWachtrij = [];
 
@@ -1688,7 +1895,7 @@ ${ingekorte}`;
     herhalingsWachtrij = sessieAntwoorden
       .filter(a => !a.goed)
       .map(a => ({
-        id:       a.id,
+        id:        a.id,
         vraagData: lesData.secties[a.sectieIndex].vragen[a.vraagIndex]
       }));
 
@@ -1710,18 +1917,18 @@ ${ingekorte}`;
     const tekstEl = document.getElementById('sectie-tekst');
     tekstEl.innerHTML = '';
     const uitleg = document.createElement('p');
-    uitleg.style.color   = 'var(--muted)';
-    uitleg.textContent   = 'De vragen die je net fout had komen hieronder terug. Ga door totdat alles goed is.';
+    uitleg.style.color = 'var(--muted)';
+    uitleg.textContent = 'De vragen die je net fout had komen hieronder terug. Ga door totdat alles goed is.';
     tekstEl.appendChild(uitleg);
 
-    document.getElementById('tijdlijn-wrap').style.display    = 'none';
+    document.getElementById('tijdlijn-wrap').style.display     = 'none';
     document.getElementById('knop-gelezen-wrap').style.display = 'none';
     document.getElementById('vragen-sectie').style.display     = 'block';
 
-    const knopVolgende         = document.getElementById('knop-volgende');
-    knopVolgende.disabled      = true;
-    knopVolgende.textContent   = 'Volgende →';
-    knopVolgende.onclick       = null;
+    const knopVolgende       = document.getElementById('knop-volgende');
+    knopVolgende.disabled    = true;
+    knopVolgende.textContent = 'Volgende →';
+    knopVolgende.onclick     = null;
 
     const inhoud = document.getElementById('vragen-inhoud');
     inhoud.innerHTML = '';
@@ -1824,7 +2031,13 @@ ${ingekorte}`;
   // ── Klaar scherm ──
   function toonKlaarScherm() {
     document.getElementById('les-scherm').classList.remove('zichtbaar');
-    document.getElementById('les-voortgang-balk').style.width = '100%';
+
+    // Voortgangsbalk: vol zetten dan fade-out
+    const balk = document.getElementById('les-voortgang-balk');
+    balk.style.width = '100%';
+    setTimeout(() => {
+      document.getElementById('les-voortgang').classList.add('vervaag');
+    }, 600);
 
     const totaal = sessieAntwoorden.length;
     const goed   = sessieAntwoorden.filter(a => a.goed).length;
@@ -1837,7 +2050,6 @@ ${ingekorte}`;
     document.getElementById('klaar-scherm').classList.add('zichtbaar');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Markeer sessie als voltooid — beïnvloedt SR-drempel bij heropenen
     markSessionDone();
   }
 
