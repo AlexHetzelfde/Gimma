@@ -1015,7 +1015,7 @@ ${ingekorte}`;
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
+        generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
       })
     });
 
@@ -1046,6 +1046,10 @@ ${ingekorte}`;
       return JSON.parse(schoon);
     } catch (e) {
       console.error('Ruwe Gemini output:', ruwe);
+      const afgekort = !ruwe.trimEnd().endsWith('}');
+      if (afgekort) {
+        throw new Error('Gemini-antwoord werd afgekapt. Probeer het opnieuw — bij een lang artikel kan dit soms voorkomen.');
+      }
       throw new Error('Kon JSON niet verwerken. Eerste 300 tekens: ' + ruwe.slice(0, 300));
     }
   }
