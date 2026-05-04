@@ -978,8 +978,10 @@ JOUW TAAK:
 
 VRAGENREGELS:
 - Meerkeuze: altijd exact 4 opties, precies 1 goed antwoord. De waarde van "goed" moet exact overeenkomen met één van de opties
-- Open vragen: verwacht antwoord is kort (1-5 woorden), niet hoofdlettergevoelig
-- Vragen toetsen begrip, geen triviale details
+- Open vragen: verwacht antwoord is kort (1-5 woorden), niet hoofdlettergevoelig. Als het antwoord een getal is, schrijf het als cijfer (bv. "2", niet "twee")
+- Vragen mogen gerust moeilijk zijn: toets verbanden, oorzaken, gevolgen en betekenis, niet alleen losse feiten of triviale details
+- Meerkeuze-afleidopties moeten plausibel zijn, niet makkelijk te raden door eliminatie
+- Minstens de helft van de vragen per sectie moet gaan over waarom iets zo is, waardoor iets gebeurde, wat het gevolg was, of wat het verband is tussen twee concepten
 
 GEEF JE ANTWOORD UITSLUITEND ALS GELDIGE JSON — geen uitleg, geen markdown, geen backticks.
 
@@ -1286,9 +1288,25 @@ ${ingekorte}`;
     return d[m][n];
   }
 
+  // Nederlandse getalwoorden naar cijfers (en omgekeerd)
+  const GETALLEN = {
+    'nul':0,'een':1,'een':1,'twee':2,'drie':3,'vier':4,'vijf':5,
+    'zes':6,'zeven':7,'acht':8,'negen':9,'tien':10,'elf':11,
+    'twaalf':12,'dertien':13,'veertien':14,'vijftien':15,'zestien':16,
+    'zeventien':17,'achttien':18,'negentien':19,'twintig':20,
+    'dertig':30,'veertig':40,'vijftig':50,'zestig':60,
+    'zeventig':70,'tachtig':80,'negentig':90,'honderd':100
+  };
+
+  function normaliseerGetal(s) {
+    const t = s.toLowerCase().trim();
+    if (t in GETALLEN) return String(GETALLEN[t]);
+    return t;
+  }
+
   function isGoedAntwoord(invoer, verwacht) {
-    const a = invoer.toLowerCase().trim();
-    const b = verwacht.toLowerCase().trim();
+    const a = normaliseerGetal(invoer);
+    const b = normaliseerGetal(verwacht);
     if (a === b) return true;
     const maxFout = b.length <= 4 ? 1 : 2;
     return levenshtein(a, b) <= maxFout;
@@ -1298,10 +1316,159 @@ ${ingekorte}`;
   function volgendeSectie() {
     huidigeSectie++;
     if (huidigeSectie >= lesData.secties.length) {
+      startHerhaling();
+    } else {
+      // Pas knoptekst aan op laatste sectie
+      toonSectie(huidigeSectie);
+      if (huidigeSectie === lesData.secties.length - 1) {
+        document.getElementById('knop-volgende').textContent = 'Afronden →';
+      }
+    }
+  }
+
+  // ════════════════════════════════════════
+  // HERHALING — foute vragen opnieuw
+  // ════════════════════════════════════════
+  let herhalingsWachtrij = []; // { vraagData, id }
+
+  function startHerhaling() {
+    // Verzamel alle fout beantwoorde vragen (eerste keer: uit sessieAntwoorden)
+    herhalingsWachtrij = sessieAntwoorden
+      .filter(a => !a.goed)
+      .map(a => ({
+        id: a.id,
+        vraagData: lesData.secties[a.sectieIndex].vragen[a.vraagIndex]
+      }));
+
+    if (herhalingsWachtrij.length === 0) {
       toonKlaarScherm();
     } else {
-      toonSectie(huidigeSectie);
+      toonHerhalingsRonde();
     }
+  }
+
+  function toonHerhalingsRonde() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Hergebruik les-scherm, maar zonder leestekst
+    document.getElementById('sectie-label-tekst').textContent = 'Herhaling';
+    document.getElementById('sectie-nummer-tekst').textContent =
+      ` — ${herhalingsWachtrij.length} vraag${herhalingsWachtrij.length !== 1 ? 'en' : ''} opnieuw`;
+    document.getElementById('sectie-titel').textContent = 'Nog niet helemaal...';
+
+    const tekstEl = document.getElementById('sectie-tekst');
+    tekstEl.innerHTML = '';
+    const uitleg = document.createElement('p');
+    uitleg.style.color = 'var(--muted)';
+    uitleg.textContent = 'De vragen die je net fout had komen hieronder terug. Ga door totdat alles goed is.';
+    tekstEl.appendChild(uitleg);
+
+    document.getElementById('tijdlijn-wrap').style.display = 'none';
+    document.getElementById('knop-gelezen-wrap').style.display = 'none';
+    document.getElementById('vragen-sectie').style.display = 'block';
+
+    const knopVolgende = document.getElementById('knop-volgende');
+    knopVolgende.disabled = true;
+    knopVolgende.textContent = 'Volgende →';
+    knopVolgende.onclick = null; // reset, wordt hieronder opnieuw gezet
+
+    const inhoud = document.getElementById('vragen-inhoud');
+    inhoud.innerHTML = '';
+
+    const rondeResultaten = herhalingsWachtrij.map(() => ({ beantwoord: false, goed: false }));
+
+    function checkAllesHerhaling() {
+      if (!rondeResultaten.every(r => r.beantwoord)) return;
+
+      // Filter de vragen die nog steeds fout zijn
+      const nogFout = herhalingsWachtrij.filter((_, i) => !rondeResultaten[i].goed);
+
+      if (nogFout.length === 0) {
+        knopVolgende.disabled = false;
+        knopVolgende.textContent = 'Alles goed! →';
+        knopVolgende.onclick = toonKlaarScherm;
+      } else {
+        knopVolgende.disabled = false;
+        knopVolgende.textContent = `Nog ${nogFout.length} fout — nog een ronde →`;
+        knopVolgende.onclick = () => {
+          herhalingsWachtrij = nogFout;
+          toonHerhalingsRonde();
+        };
+      }
+    }
+
+    herhalingsWachtrij.forEach((item, hi) => {
+      const vraag = item.vraagData;
+      const blok = document.createElement('div');
+      blok.className = 'vraag-blok';
+
+      if (vraag.type === 'meerkeuze') {
+        blok.innerHTML = `
+          <div class="vraag-tekst">${hi + 1}. ${vraag.vraag}</div>
+          <div class="opties-grid" id="h-opties-${hi}">
+            ${vraag.opties.map((opt, oi) =>
+              `<button class="optie-knop" data-oi="${oi}">${opt}</button>`
+            ).join('')}
+          </div>
+          <div class="feedback" id="h-feedback-${hi}"></div>
+        `;
+        blok.querySelectorAll('.optie-knop').forEach(knop => {
+          knop.addEventListener('click', function() {
+            if (rondeResultaten[hi].beantwoord) return;
+            const gekozen = vraag.opties[parseInt(this.dataset.oi)];
+            const goed = gekozen === vraag.goed;
+
+            blok.querySelectorAll('.optie-knop').forEach(k => {
+              k.disabled = true;
+              if (k.textContent === vraag.goed) k.classList.add('gemist');
+            });
+            this.classList.remove('gemist');
+            this.classList.add(goed ? 'goed' : 'fout');
+
+            const fb = document.getElementById(`h-feedback-${hi}`);
+            fb.textContent = goed ? '✓ Correct!' : `✗ Het juiste antwoord is: ${vraag.goed}`;
+            fb.className = `feedback ${goed ? 'goed' : 'fout'}`;
+
+            rondeResultaten[hi] = { beantwoord: true, goed };
+            checkAllesHerhaling();
+          });
+        });
+      } else {
+        blok.innerHTML = `
+          <div class="vraag-tekst">${hi + 1}. ${vraag.vraag}</div>
+          <div class="open-invoer-wrap">
+            <input type="text" class="open-invoer" id="h-open-invoer-${hi}" placeholder="Jouw antwoord..."/>
+            <button class="open-invoer-knop" id="h-open-knop-${hi}">Controleer</button>
+          </div>
+          <div class="feedback" id="h-feedback-${hi}"></div>
+        `;
+        const invoerEl = blok.querySelector(`#h-open-invoer-${hi}`);
+        const knopEl   = blok.querySelector(`#h-open-knop-${hi}`);
+
+        const controleer = () => {
+          if (rondeResultaten[hi].beantwoord) return;
+          const invoer = invoerEl.value.trim();
+          if (!invoer) return;
+
+          const goed = isGoedAntwoord(invoer, vraag.antwoord);
+          invoerEl.disabled = true;
+          invoerEl.classList.add(goed ? 'goed' : 'fout');
+          knopEl.disabled = true;
+
+          const fb = document.getElementById(`h-feedback-${hi}`);
+          fb.textContent = goed ? '✓ Correct!' : `✗ Het antwoord was: ${vraag.antwoord}`;
+          fb.className = `feedback ${goed ? 'goed' : 'fout'}`;
+
+          rondeResultaten[hi] = { beantwoord: true, goed };
+          checkAllesHerhaling();
+        };
+
+        invoerEl.addEventListener('keydown', e => { if (e.key === 'Enter') controleer(); });
+        knopEl.addEventListener('click', controleer);
+      }
+
+      inhoud.appendChild(blok);
+    });
   }
 
   // ── Klaar scherm ──
