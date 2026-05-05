@@ -1065,12 +1065,16 @@ async function startLes() {
   document.getElementById('shields-balk').style.display = 'flex';
 
   sessieAntwoorden = [];
-  vraagResultaten  = {};
+  vraagResultaten  = {};    // standaard leeg
   inVraagModus     = false;
 
   const opgeslagen = await haalVoortgang();
 
   if (opgeslagen && !opgeslagen.voltooid && opgeslagen.sectieIndex != null) {
+    // herstel vraagResultaten indien opgeslagen
+    if (opgeslagen.vraagResultaten) {
+      vraagResultaten = opgeslagen.vraagResultaten;
+    }
     huidigeSectie = opgeslagen.sectieIndex;
     vulSectieInhoud(huidigeSectie); // pre-vul voor kijk-op
     if (opgeslagen.inVragen && opgeslagen.vraagIndex != null) {
@@ -1097,7 +1101,8 @@ function toonSectie(index) {
     sectieIndex: index,
     inVragen:    false,
     voltooid:    false,
-    titel:       artikelTitel
+    titel:       artikelTitel,
+    vraagResultaten: vraagResultaten   // opslaan!
   });
 
   const sectie = lesData.secties[index];
@@ -1147,7 +1152,8 @@ function toonVraag(vi) {
     vraagIndex:  vi,
     inVragen:    true,
     voltooid:    false,
-    titel:       artikelTitel
+    titel:       artikelTitel,
+    vraagResultaten: vraagResultaten   // opslaan!
   });
 
   // Header
@@ -1218,6 +1224,16 @@ function toonVraag(vi) {
     document.getElementById('knop-weetniets').style.display = 'none';
     document.getElementById('knop-kijkop').style.display   = 'none';
     knopVolgende.disabled = false;
+
+    // Opslaan na elke beantwoording
+    slaVoortgangOp({
+      sectieIndex: huidigeSectie,
+      vraagIndex:  vi,
+      inVragen:    true,
+      voltooid:    false,
+      titel:       artikelTitel,
+      vraagResultaten: vraagResultaten
+    });
 
     renderShields();
 
@@ -1391,6 +1407,16 @@ function markeerHuidigeVraagFout() {
   document.getElementById('knop-weetniets').style.display = 'none';
   document.getElementById('knop-kijkop').style.display   = 'none';
   document.getElementById('knop-volgende').disabled       = false;
+
+  // Opslaan na "weet niet"
+  slaVoortgangOp({
+    sectieIndex: huidigeSectie,
+    vraagIndex:  huidigeVraag,
+    inVragen:    true,
+    voltooid:    false,
+    titel:       artikelTitel,
+    vraagResultaten: vraagResultaten
+  });
 
   renderShields();
 }
