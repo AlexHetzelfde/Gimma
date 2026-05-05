@@ -809,7 +809,7 @@ header {
 .optie-knop:hover:not(:disabled) {
   transform: translateY(-1px);
   opacity: 0.92;
-  background: #f2f2f2 !important;   /* lichte grijze highlight op hover */
+  background: #d9d9d9 !important;   /* donkerder grijs voor duidelijke hover */
 }
 
 .optie-knop:active:not(:disabled) {
