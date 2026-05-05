@@ -1065,24 +1065,25 @@ async function startLes() {
   document.getElementById('shields-balk').style.display = 'flex';
 
   sessieAntwoorden = [];
-  vraagResultaten  = {};    // standaard leeg
   inVraagModus     = false;
 
   const opgeslagen = await haalVoortgang();
 
+  // Herstel ALLEEN als de voortgang er is én niet voltooid is
   if (opgeslagen && !opgeslagen.voltooid && opgeslagen.sectieIndex != null) {
-    // herstel vraagResultaten indien opgeslagen
-    if (opgeslagen.vraagResultaten) {
-      vraagResultaten = opgeslagen.vraagResultaten;
-    }
+    // Herstel vraagResultaten VOORDAT we iets doen dat opslaat
+    vraagResultaten = opgeslagen.vraagResultaten || {};
     huidigeSectie = opgeslagen.sectieIndex;
-    vulSectieInhoud(huidigeSectie); // pre-vul voor kijk-op
+    vulSectieInhoud(huidigeSectie);
+
     if (opgeslagen.inVragen && opgeslagen.vraagIndex != null) {
       toonVraag(opgeslagen.vraagIndex);
     } else {
       toonSectie(huidigeSectie);
     }
   } else {
+    // Nieuwe les, start bij sectie 0
+    vraagResultaten = {};
     huidigeSectie = 0;
     toonSectie(0);
   }
