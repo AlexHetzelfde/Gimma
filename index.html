@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wiki Leerapp</title>
-  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
       --bg:      #0f0f0f;
@@ -18,6 +18,9 @@
       --error:   #c46a5a;
       --goed:    #5a9e7a;
       --fout:    #c46a5a;
+
+      --les-kleur:     #c8a96e;
+      --les-kleur-rgb: 200, 169, 110;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,11 +35,6 @@
       transition: background 0.3s;
     }
 
-    /* ════════════════════════════════════════
-       LAYOUT MODES
-    ════════════════════════════════════════ */
-
-    /* Telefoon-modus: body toont een gekanteld "frame" */
     body.layout-telefoon {
       background: #080808;
       align-items: center;
@@ -55,7 +53,6 @@
       overflow: hidden;
     }
 
-    /* Toon het telefoon-notch decoratief element */
     body.layout-telefoon #app-shell::before {
       content: '';
       display: block;
@@ -69,9 +66,7 @@
       z-index: 100;
     }
 
-    body.layout-telefoon header {
-      padding-top: 2rem; /* ruimte voor notch */
-    }
+    body.layout-telefoon header { padding-top: 2rem; }
 
     #app-shell {
       width: 100%;
@@ -80,7 +75,6 @@
       flex-direction: column;
     }
 
-    /* ── Header ── */
     header {
       padding: 1.25rem 2rem;
       border-bottom: 1px solid var(--border);
@@ -119,7 +113,6 @@
       text-transform: uppercase;
     }
 
-    /* ── Layout Toggle ── */
     .layout-toggle {
       display: flex;
       align-items: center;
@@ -145,9 +138,7 @@
       position: relative;
     }
 
-    .layout-knop:first-child {
-      border-right: 1px solid var(--border);
-    }
+    .layout-knop:first-child { border-right: 1px solid var(--border); }
 
     .layout-knop.actief {
       background: var(--bg2);
@@ -159,7 +150,6 @@
       background: rgba(255,255,255,0.04);
     }
 
-    /* Tooltip */
     .layout-knop::after {
       content: attr(data-tip);
       position: absolute;
@@ -200,10 +190,9 @@
       color: var(--accent);
     }
 
-    /* ── Voortgangsbalk ── */
     #les-voortgang {
       display: none;
-      height: 3px;
+      height: 4px;
       background: var(--border);
     }
 
@@ -211,14 +200,11 @@
 
     #les-voortgang-balk {
       height: 100%;
-      background: var(--accent);
+      background: var(--les-kleur);
       transition: width 0.5s ease;
       width: 0%;
     }
 
-    /* ════════════════════════════════════════
-       KEY SCHERM
-    ════════════════════════════════════════ */
     #key-scherm {
       display: none;
       flex: 1;
@@ -295,9 +281,6 @@
       transition: opacity 0.4s;
     }
 
-    /* ════════════════════════════════════════
-       KEY MODAL
-    ════════════════════════════════════════ */
     #key-modal {
       display: none;
       position: fixed;
@@ -340,7 +323,6 @@
       margin-top: 1rem;
     }
 
-    /* ── Homescreen ── */
     #homescreen {
       flex: 1;
       display: none;
@@ -381,7 +363,36 @@
       max-width: 400px;
     }
 
-    /* ── Laadbalk ── */
+    .categorie-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.3rem 0.85rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .categorie-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .sr-cat-tag {
+      font-size: 0.68rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 12px;
+      margin-left: auto;
+      white-space: nowrap;
+      letter-spacing: 0.03em;
+    }
+
     #status-wrap {
       display: none;
       flex-direction: column;
@@ -410,7 +421,7 @@
 
     .laadbalk-voortgang {
       height: 100%;
-      background: var(--accent);
+      background: var(--les-kleur);
       border-radius: 2px;
       width: 0%;
       transition: width 0.6s ease;
@@ -430,9 +441,6 @@
       100% { left: 110%; }
     }
 
-    /* ════════════════════════════════════════
-       SR REVIEW
-    ════════════════════════════════════════ */
     .sr-review-wrap {
       background: var(--bg2);
       border: 1px solid var(--border);
@@ -519,7 +527,6 @@
 
     .sr-score-tekst strong { color: var(--accent2); }
 
-    /* ── Knoppen ── */
     .knop-primair {
       background: var(--accent);
       color: #0f0f0f;
@@ -537,6 +544,11 @@
     .knop-primair:active { transform: translateY(0); }
     .knop-primair:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
 
+    #knop-les {
+      background: var(--les-kleur);
+      transition: opacity 0.2s, transform 0.15s, background 0.4s ease;
+    }
+
     .knop-secundair {
       background: none;
       border: 1px solid var(--border);
@@ -551,7 +563,6 @@
 
     .knop-secundair:hover { border-color: var(--accent); color: var(--accent); }
 
-    /* ── Fout ── */
     .fout-melding {
       background: rgba(196, 106, 90, 0.1);
       border: 1px solid var(--error);
@@ -564,54 +575,68 @@
     }
 
     /* ════════════════════════════════════════
-       LES SCHERM
+       LES SCHERM — READER STYLE (Image 2)
     ════════════════════════════════════════ */
+
     #les-scherm {
       display: none;
       max-width: 680px;
       margin: 0 auto;
-      padding: 2.5rem 1.5rem 5rem;
+      padding: 0 0 5rem;
       width: 100%;
     }
 
     #les-scherm.zichtbaar { display: block; }
 
-    .sectie-label {
-      font-size: 0.72rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 0.4rem;
+    /* Centered reader header like Image 2 */
+    .reader-header {
+      text-align: center;
+      padding: 2.5rem 2rem 2rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2.5rem;
     }
 
-    .sectie-nummer { color: var(--muted); }
+    .reader-artikel-naam {
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
 
-    .sectie-titel {
-      font-family: 'Lora', serif;
-      font-size: clamp(1.4rem, 4vw, 2rem);
-      font-weight: 600;
-      line-height: 1.25;
-      margin-bottom: 2rem;
+    .reader-sectie-naam {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--les-kleur);
+      margin-bottom: 0.4rem;
+      transition: color 0.4s ease;
+    }
+
+    .reader-pagina {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
     }
 
     .sectie-tekst {
       font-family: 'Lora', serif;
-      font-size: 1.05rem;
-      line-height: 1.9;
+      font-size: 1.1rem;
+      line-height: 1.95;
       color: var(--text);
-      margin-bottom: 2rem;
+      padding: 0 2rem 2rem;
     }
 
-    .sectie-tekst p { margin-bottom: 1.1rem; }
+    .sectie-tekst p { margin-bottom: 1.25rem; }
     .sectie-tekst p:last-child { margin-bottom: 0; }
 
-    /* Tijdlijn */
     .tijdlijn-wrap {
       background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 1.25rem 1.5rem;
-      margin-bottom: 2rem;
+      margin: 0 2rem 2rem;
     }
 
     .tijdlijn-kop {
@@ -634,91 +659,154 @@
     .tijdlijn-rij:last-child { border-bottom: none; }
 
     .tijdlijn-jaar {
-      color: var(--accent);
+      color: var(--les-kleur);
       font-weight: 500;
       min-width: 65px;
       flex-shrink: 0;
     }
 
-    .vragen-scheiding {
-      border: none;
+    /* ════════════════════════════════════════
+       GELEZEN KNOP — bottom bar style
+    ════════════════════════════════════════ */
+
+    #knop-gelezen-wrap {
+      display: none;
+      padding: 1.5rem 2rem;
       border-top: 1px solid var(--border);
-      margin: 2.5rem 0;
+      margin-top: 1rem;
     }
+
+    .knop-gelezen {
+      width: 100%;
+      background: var(--les-kleur);
+      color: rgba(0,0,0,0.85);
+      border: none;
+      padding: 1rem 2rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 0.01em;
+    }
+
+    .knop-gelezen:hover { opacity: 0.88; transform: translateY(-1px); }
+    .knop-gelezen:active { transform: translateY(0); opacity: 1; }
+
+    /* ════════════════════════════════════════
+       VRAGEN SECTIE — Duolingo style (Image 1)
+    ════════════════════════════════════════ */
+
+    #vragen-sectie {
+      padding: 0 0 1rem;
+    }
+
+    .vragen-scheiding { display: none; }
 
     .vragen-kop {
       font-size: 0.72rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 1.5rem;
+      padding: 0 2rem;
+      margin-bottom: 1rem;
     }
 
-    .vraag-blok { margin-bottom: 2rem; }
+    /* The big colored question card */
+    .vraag-blok {
+      margin: 0 0 1rem;
+      padding: 2rem 1.75rem;
+      background: var(--les-kleur) !important;
+      border: none !important;
+      border-radius: 0;
+      position: relative;
+    }
+
+    .vraag-blok:first-of-type {
+      border-radius: 0;
+    }
+
+    /* Within SR review, keep subtle style */
+    .sr-vragen-inhoud .vraag-blok {
+      background: rgba(var(--les-kleur-rgb), 0.05) !important;
+      border: 1px solid rgba(var(--les-kleur-rgb), 0.15) !important;
+      border-radius: 8px !important;
+    }
 
     .vraag-tekst {
       font-size: 1rem;
-      font-weight: 500;
-      line-height: 1.5;
-      margin-bottom: 1rem;
-      color: var(--text);
+      font-weight: 600;
+      line-height: 1.55;
+      margin-bottom: 1.25rem;
+      color: rgba(0,0,0,0.88);
     }
 
+    /* White rounded option buttons like Image 1 */
     .opties-grid {
       display: flex;
       flex-direction: column;
-      gap: 0.6rem;
+      gap: 0.75rem;
     }
 
     .optie-knop {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 0.85rem 1.1rem;
-      border-radius: 6px;
+      background: #fff !important;
+      border: none !important;
+      border-bottom: 3px solid rgba(0,0,0,0.15) !important;
+      color: #2a2424 !important;
+      padding: 1.1rem 1.25rem !important;
+      border-radius: 14px !important;
       cursor: pointer;
       text-align: left;
       font-family: 'DM Sans', sans-serif;
-      font-size: 0.95rem;
-      transition: border-color 0.15s, background 0.15s;
+      font-size: 1rem !important;
+      font-weight: 600 !important;
+      transition: transform 0.1s, opacity 0.15s;
       line-height: 1.4;
     }
 
     .optie-knop:hover:not(:disabled) {
-      border-color: var(--accent);
-      background: var(--bg3);
+      transform: translateY(-1px);
+      opacity: 0.92;
     }
 
-    .optie-knop.goed {
-      border-color: var(--goed);
-      background: rgba(90, 158, 122, 0.12);
-      color: var(--goed);
-    }
-
-    .optie-knop.fout {
-      border-color: var(--fout);
-      background: rgba(196, 106, 90, 0.1);
-      color: var(--fout);
-    }
-
-    .optie-knop.gemist {
-      border-color: var(--goed);
-      color: var(--goed);
-      opacity: 0.6;
+    .optie-knop:active:not(:disabled) {
+      transform: translateY(1px);
+      border-bottom-width: 1px !important;
     }
 
     .optie-knop:disabled { cursor: default; }
 
+    .optie-knop.goed {
+      background: #3c9e6a !important;
+      color: #fff !important;
+      border-bottom-color: rgba(0,0,0,0.2) !important;
+    }
+
+    .optie-knop.fout {
+      background: #cc5844 !important;
+      color: #fff !important;
+      border-bottom-color: rgba(0,0,0,0.2) !important;
+    }
+
+    .optie-knop.gemist {
+      background: rgba(255,255,255,0.55) !important;
+      color: #3c9e6a !important;
+      outline: 2px solid #3c9e6a;
+      outline-offset: -2px;
+    }
+
     .feedback {
-      margin-top: 0.6rem;
-      font-size: 0.85rem;
-      font-weight: 500;
+      margin-top: 0.85rem;
+      font-size: 0.9rem;
+      font-weight: 700;
       min-height: 1.2rem;
     }
 
-    .feedback.goed { color: var(--goed); }
-    .feedback.fout { color: var(--fout); }
+    .feedback.goed { color: rgba(0,0,0,0.75); }
+    .feedback.fout { color: rgba(0,0,0,0.75); }
 
+    /* Open question input inside colored card */
     .open-invoer-wrap {
       display: flex;
       gap: 0.6rem;
@@ -728,45 +816,171 @@
     .open-invoer {
       flex: 1;
       min-width: 200px;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 0.8rem 1rem;
-      border-radius: 6px;
+      background: rgba(255,255,255,0.92);
+      border: none;
+      border-bottom: 3px solid rgba(0,0,0,0.15);
+      color: #2a2424;
+      padding: 0.9rem 1rem;
+      border-radius: 12px;
       font-family: 'DM Sans', sans-serif;
       font-size: 1rem;
+      font-weight: 600;
       outline: none;
-      transition: border-color 0.15s;
+      transition: box-shadow 0.15s;
     }
 
-    .open-invoer:focus { border-color: var(--accent); }
-    .open-invoer:disabled { opacity: 0.5; }
-    .open-invoer.goed { border-color: var(--goed); }
-    .open-invoer.fout { border-color: var(--fout); }
+    .open-invoer:focus {
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.25);
+    }
+
+    .open-invoer:disabled { opacity: 0.6; }
+
+    .open-invoer.goed {
+      background: #3c9e6a !important;
+      color: white;
+    }
+
+    .open-invoer.fout {
+      background: #cc5844 !important;
+      color: white;
+    }
 
     .open-invoer-knop {
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 0.8rem 1.2rem;
-      border-radius: 6px;
+      background: rgba(0,0,0,0.18);
+      border: none;
+      color: rgba(0,0,0,0.75);
+      padding: 0.9rem 1.2rem;
+      border-radius: 12px;
       cursor: pointer;
       font-family: 'DM Sans', sans-serif;
       font-size: 0.9rem;
-      transition: border-color 0.15s;
+      font-weight: 700;
+      transition: background 0.15s;
       white-space: nowrap;
     }
 
-    .open-invoer-knop:hover:not(:disabled) { border-color: var(--accent); }
-    .open-invoer-knop:disabled { opacity: 0.4; cursor: default; }
-
-    .sectie-nav {
-      margin-top: 2.5rem;
-      display: flex;
-      justify-content: flex-end;
+    .open-invoer-knop:hover:not(:disabled) {
+      background: rgba(0,0,0,0.28);
     }
 
-    /* ── Klaar scherm ── */
+    .open-invoer-knop:disabled { opacity: 0.4; cursor: default; }
+
+    /* SR review — keep open invoer fields dark */
+    #sr-vragen-inhoud .open-invoer {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    #sr-vragen-inhoud .open-invoer:focus {
+      border-color: var(--les-kleur);
+      box-shadow: none;
+    }
+
+    #sr-vragen-inhoud .open-invoer-knop {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+    }
+
+    #sr-vragen-inhoud .open-invoer-knop:hover:not(:disabled) {
+      border-color: var(--les-kleur);
+    }
+
+    #sr-vragen-inhoud .vraag-tekst {
+      color: var(--text);
+    }
+
+    #sr-vragen-inhoud .optie-knop {
+      background: var(--bg2) !important;
+      border: 1px solid var(--border) !important;
+      border-bottom: 1px solid var(--border) !important;
+      color: var(--text) !important;
+      border-radius: 6px !important;
+      font-weight: 400 !important;
+    }
+
+    #sr-vragen-inhoud .optie-knop:hover:not(:disabled) {
+      border-color: var(--les-kleur) !important;
+      background: var(--bg3) !important;
+    }
+
+    #sr-vragen-inhoud .optie-knop.goed {
+      border-color: var(--goed) !important;
+      background: rgba(90, 158, 122, 0.12) !important;
+      color: var(--goed) !important;
+    }
+
+    #sr-vragen-inhoud .optie-knop.fout {
+      border-color: var(--fout) !important;
+      background: rgba(196, 106, 90, 0.1) !important;
+      color: var(--fout) !important;
+    }
+
+    #sr-vragen-inhoud .optie-knop.gemist {
+      border-color: var(--goed) !important;
+      color: var(--goed) !important;
+      background: none !important;
+      outline: none;
+      opacity: 0.6;
+    }
+
+    #sr-vragen-inhoud .feedback.goed { color: var(--goed); }
+    #sr-vragen-inhoud .feedback.fout { color: var(--fout); }
+
+    /* ════════════════════════════════════════
+       SECTIE NAV — bottom pill buttons (Image 1 style)
+    ════════════════════════════════════════ */
+
+    .sectie-nav {
+      display: flex;
+      gap: 0.75rem;
+      padding: 1.25rem 2rem 0.5rem;
+      align-items: stretch;
+    }
+
+    .knop-weetniets {
+      flex: 1;
+      background: var(--bg2);
+      border: 2px solid var(--border);
+      color: var(--muted);
+      padding: 1rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .knop-weetniets:hover { border-color: var(--fout); color: var(--fout); }
+
+    #knop-volgende {
+      flex: 1.5;
+      background: var(--les-kleur);
+      color: rgba(0,0,0,0.85);
+      border: none;
+      padding: 1rem 1.5rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s, background 0.4s ease;
+      letter-spacing: 0.01em;
+    }
+
+    #knop-volgende:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+    #knop-volgende:active:not(:disabled) { transform: translateY(0); }
+    #knop-volgende:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     #klaar-scherm {
       display: none;
       flex: 1;
@@ -794,23 +1008,16 @@
       line-height: 1.7;
     }
 
-    .klaar-stats strong { color: var(--accent); }
+    .klaar-stats strong { color: var(--les-kleur); }
 
-    /* ── Voortgangsbalk fade-out ── */
-    #les-voortgang {
-      transition: opacity 0.6s ease;
-    }
+    #les-voortgang { transition: opacity 0.6s ease; }
+    #les-voortgang.vervaag { opacity: 0; }
 
-    #les-voortgang.vervaag {
-      opacity: 0;
-    }
-
-    /* ── Hervatten badge ── */
     .hervatten-badge {
       display: inline-block;
       background: rgba(200, 169, 110, 0.12);
       border: 1px solid rgba(200, 169, 110, 0.3);
-      color: var(--accent);
+      color: var(--les-kleur);
       font-size: 0.75rem;
       padding: 0.2rem 0.6rem;
       border-radius: 20px;
@@ -820,7 +1027,6 @@
       letter-spacing: 0.02em;
     }
 
-    /* ── Al gemaakt modal ── */
     #algemaakt-modal {
       display: none;
       position: fixed;
@@ -866,53 +1072,38 @@
       line-height: 1.5;
     }
 
-    /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-    /* ── Mobiel ── */
     @media (max-width: 480px) {
       header { padding: 1rem 1.25rem; }
       .datum { display: none; }
       .key-kaart { padding: 1.75rem 1.25rem; }
       .sr-review-wrap { padding: 1.25rem; }
       .knop-primair { padding: 0.85rem 1.5rem; font-size: 0.95rem; }
-      .optie-knop { padding: 0.9rem 1rem; font-size: 0.9rem; }
-      .layout-toggle { display: none; } /* toggle niet zinvol op echt mobiel */
+      .layout-toggle { display: none; }
+      .reader-header { padding: 2rem 1.25rem 1.75rem; }
+      .sectie-tekst { padding: 0 1.25rem 2rem; }
+      .tijdlijn-wrap { margin: 0 1.25rem 2rem; }
+      .knop-gelezen { padding: 0.9rem; }
+      #knop-gelezen-wrap { padding: 1.25rem; }
+      .sectie-nav { padding: 1rem 0 0.5rem; }
+      .vraag-blok { padding: 1.5rem 1.25rem; }
     }
 
-    /* ── Telefoon modus extra tweaks ── */
-    body.layout-telefoon .sectie-titel {
-      font-size: 1.4rem;
-    }
+    body.layout-telefoon .sectie-tekst { font-size: 1.05rem; line-height: 1.85; }
+    body.layout-telefoon #les-scherm { padding: 0 0 5rem; }
+    body.layout-telefoon header { padding-left: 1.25rem; padding-right: 1.25rem; }
+    body.layout-telefoon .datum { display: none; }
+    body.layout-telefoon #homescreen { padding: 2rem 1.25rem; }
+    body.layout-telefoon .reader-header { padding: 2rem 1.25rem 1.5rem; }
+    body.layout-telefoon .sectie-tekst { padding: 0 1.25rem 2rem; }
+    body.layout-telefoon .tijdlijn-wrap { margin: 0 1.25rem 2rem; }
+    body.layout-telefoon #knop-gelezen-wrap { padding: 1.25rem; }
+    body.layout-telefoon .sectie-nav { padding: 1rem 0 0.5rem; }
 
-    body.layout-telefoon .sectie-tekst {
-      font-size: 1rem;
-      line-height: 1.75;
-    }
-
-    body.layout-telefoon #les-scherm {
-      padding: 2rem 1.25rem 5rem;
-    }
-
-    body.layout-telefoon header {
-      padding-left: 1.25rem;
-      padding-right: 1.25rem;
-    }
-
-    body.layout-telefoon .datum {
-      display: none;
-    }
-
-    body.layout-telefoon #homescreen {
-      padding: 2rem 1.25rem;
-    }
-
-    /* Telefoon-modus: "scherm" indicator in header */
-    .layout-indicator {
-      display: none;
-    }
+    .layout-indicator { display: none; }
 
     body.layout-telefoon .layout-indicator {
       display: block;
@@ -926,7 +1117,6 @@
       transform: translateX(-50%);
     }
 
-    /* Toast notificatie */
     #toast {
       position: fixed;
       bottom: 2rem;
@@ -949,11 +1139,39 @@
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
+
+    /* Herhaling header styling */
+    .herhaling-header {
+      text-align: center;
+      padding: 2.5rem 2rem 2rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0;
+    }
+
+    .herhaling-label {
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .herhaling-titel {
+      font-family: 'Lora', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.3rem;
+    }
+
+    .herhaling-sub {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
   </style>
 </head>
 <body>
 
-<!-- Toast -->
 <div id="toast"></div>
 
 <div id="app-shell">
@@ -965,7 +1183,6 @@
     <div class="header-rechts">
       <div class="datum" id="header-datum"></div>
 
-      <!-- Layout toggle -->
       <div class="layout-toggle" id="layout-toggle">
         <button class="layout-knop actief" id="knop-desktop" data-tip="Desktop" onclick="setLayout('desktop')" title="Desktop layout">
           🖥
@@ -1051,7 +1268,6 @@
       <p>Het uitgelichte artikel van de Nederlandse Wikipedia, omgezet naar een les met vragen en dagelijkse herhaling.</p>
     </div>
 
-    <!-- SR Review sectie -->
     <div id="sr-review-wrap" class="sr-review-wrap" style="display:none">
       <div class="sr-review-header">
         <div class="sr-review-icoon">🔁</div>
@@ -1060,7 +1276,7 @@
           <div class="sr-review-sub" id="sr-review-sub">Laden...</div>
         </div>
       </div>
-      <div id="sr-vragen-inhoud"></div>
+      <div id="sr-vragen-inhoud" class="sr-vragen-inhoud"></div>
       <div id="sr-klaar-balk" class="sr-klaar-balk" style="display:none">
         <div class="sr-score-tekst" id="sr-score-tekst"></div>
         <button class="knop-primair" onclick="afrondSRReview()">Doorgaan naar les →</button>
@@ -1068,6 +1284,11 @@
     </div>
 
     <div id="cache-melding" class="cache-melding" style="display:none"></div>
+
+    <div id="categorie-chip" style="display:none" class="categorie-chip">
+      <span class="categorie-dot" id="categorie-dot"></span>
+      <span id="categorie-naam-tekst"></span>
+    </div>
 
     <button class="knop-primair" id="knop-les" onclick="maakLes()" style="display:none">
       Maak les van vandaag
@@ -1086,32 +1307,42 @@
 
   <!-- ═══ LES SCHERM ═══ -->
   <div id="les-scherm">
-    <div class="sectie-label">
-      <span id="sectie-label-tekst">Sectie</span>
-      <span class="sectie-nummer" id="sectie-nummer-tekst"></span>
+
+    <!-- Reader header — Image 2 style: centered 3-line header -->
+    <div class="reader-header">
+      <div class="reader-artikel-naam" id="sectie-label-tekst"></div>
+      <div class="reader-sectie-naam" id="sectie-titel"></div>
+      <div class="reader-pagina" id="sectie-nummer-tekst"></div>
+      <!-- Hidden dot kept for JS compat -->
+      <span id="sectie-label-dot" style="display:none"></span>
     </div>
-    <div class="sectie-titel" id="sectie-titel"></div>
+
     <div class="sectie-tekst" id="sectie-tekst"></div>
+
     <div id="tijdlijn-wrap" class="tijdlijn-wrap" style="display:none">
       <div class="tijdlijn-kop">Tijdlijn</div>
       <div id="tijdlijn-inhoud"></div>
     </div>
 
+    <!-- "Ik heb dit gelezen" bottom bar -->
+    <div id="knop-gelezen-wrap" style="display:none">
+      <button class="knop-gelezen" onclick="toonVragen()">
+        Ik heb dit gelezen →
+      </button>
+    </div>
+
+    <!-- Questions section — Duolingo style -->
     <div id="vragen-sectie" style="display:none">
-      <hr class="vragen-scheiding"/>
       <div class="vragen-kop">Test jezelf</div>
       <div id="vragen-inhoud"></div>
       <div class="sectie-nav">
-        <button class="knop-primair" id="knop-volgende" onclick="volgendeSectie()" disabled>
+        <button class="knop-weetniets" id="knop-weetniets" onclick="markeerAllesFout()" style="display:none">
+          Ik weet het niet
+        </button>
+        <button id="knop-volgende" onclick="volgendeSectie()" disabled>
           Volgende →
         </button>
       </div>
-    </div>
-
-    <div class="sectie-nav" id="knop-gelezen-wrap">
-      <button class="knop-secundair" onclick="toonVragen()">
-        Ik heb dit gelezen →
-      </button>
     </div>
   </div>
 
@@ -1133,37 +1364,202 @@
   const LS_SR           = 'wikileer_sr';
   const LS_LAST_SESSION = 'wikileer_last_session';
   const LS_LAYOUT       = 'wikileer_layout';
+  const LS_CATS         = 'wikileer_categories';
   const MAX_TEKST       = 6000;
 
   const INTERVALS = [1, 2, 4, 7, 14, 30];
 
-  // ── Voortgang helpers (per dag, vervalt automatisch morgen) ──
+  // ════════════════════════════════════════
+  // INDEXEDDB LAAG
+  // ════════════════════════════════════════
+  const DB_NAAM   = 'wikileer_db';
+  const DB_VERSIE = 1;
+  const STORE_KV  = 'kv';
+  let db = null;
+
+  function openDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAAM, DB_VERSIE);
+      req.onupgradeneeded = e => {
+        e.target.result.createObjectStore(STORE_KV);
+      };
+      req.onsuccess = e => resolve(e.target.result);
+      req.onerror   = () => reject(req.error);
+    });
+  }
+
+  function dbGet(sleutel) {
+    return new Promise((resolve, reject) => {
+      const tx  = db.transaction(STORE_KV, 'readonly');
+      const req = tx.objectStore(STORE_KV).get(sleutel);
+      req.onsuccess = () => resolve(req.result ?? null);
+      req.onerror   = () => reject(req.error);
+    });
+  }
+
+  function dbSet(sleutel, waarde) {
+    return new Promise((resolve, reject) => {
+      const tx  = db.transaction(STORE_KV, 'readwrite');
+      const req = tx.objectStore(STORE_KV).put(waarde, sleutel);
+      req.onsuccess = () => resolve();
+      req.onerror   = () => reject(req.error);
+    });
+  }
+
+  function dbDelete(sleutel) {
+    return new Promise((resolve, reject) => {
+      const tx  = db.transaction(STORE_KV, 'readwrite');
+      const req = tx.objectStore(STORE_KV).delete(sleutel);
+      req.onsuccess = () => resolve();
+      req.onerror   = () => reject(req.error);
+    });
+  }
+
+  function dbGetAllKeys() {
+    return new Promise((resolve, reject) => {
+      const tx  = db.transaction(STORE_KV, 'readonly');
+      const req = tx.objectStore(STORE_KV).getAllKeys();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror   = () => reject(req.error);
+    });
+  }
+
+  async function migreerVanLocalStorage() {
+    const alGedaan = await dbGet('_migratie_gedaan');
+    if (alGedaan) return;
+
+    const statischeSleutels = [LS_KEY, LS_SR, LS_LAST_SESSION, LS_CATS];
+    const prefixen          = ['wikileer_les_', 'wikileer_prog_'];
+
+    const teVerhuizen = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k) continue;
+      if (statischeSleutels.includes(k) || prefixen.some(p => k.startsWith(p))) {
+        teVerhuizen.push(k);
+      }
+    }
+
+    for (const k of teVerhuizen) {
+      const waarde = localStorage.getItem(k);
+      if (waarde !== null) {
+        await dbSet(k, waarde);
+        localStorage.removeItem(k);
+      }
+    }
+
+    await dbSet('_migratie_gedaan', '1');
+  }
+
+  // ════════════════════════════════════════
+  // OPSLAG HELPERS
+  // ════════════════════════════════════════
+
+  async function haalKey() {
+    return (await dbGet(LS_KEY)) || '';
+  }
+
+  async function slaKeyOp(k) {
+    await dbSet(LS_KEY, k.trim());
+  }
+
+  async function haalGecachedeLes() {
+    try {
+      const raw = await dbGet(vandaagSleutel());
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }
+
+  async function slaLesOp(lesObj) {
+    try {
+      const sleutels = await dbGetAllKeys();
+      for (const k of sleutels) {
+        if (typeof k === 'string' && k.startsWith('wikileer_les_') && k !== vandaagSleutel()) {
+          await dbDelete(k);
+        }
+      }
+      await dbSet(vandaagSleutel(), JSON.stringify(lesObj));
+    } catch {}
+  }
+
+  async function haalSRData() {
+    try {
+      const raw = await dbGet(LS_SR);
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  }
+
+  async function slaSRDataOp(data) {
+    try { await dbSet(LS_SR, JSON.stringify(data)); } catch {}
+  }
+
   function vandaagProgSleutel() {
     return 'wikileer_prog_' + new Date().toISOString().slice(0, 10);
   }
 
-  function haalVoortgang() {
-    try { return JSON.parse(localStorage.getItem(vandaagProgSleutel()) || 'null'); }
-    catch { return null; }
+  async function haalVoortgang() {
+    try {
+      const raw = await dbGet(vandaagProgSleutel());
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
   }
 
-  function slaVoortgangOp(obj) {
-    try { localStorage.setItem(vandaagProgSleutel(), JSON.stringify(obj)); } catch {}
+  async function slaVoortgangOp(obj) {
+    try { await dbSet(vandaagProgSleutel(), JSON.stringify(obj)); } catch {}
   }
 
-  function verwijderVoortgang() {
-    localStorage.removeItem(vandaagProgSleutel());
+  async function verwijderVoortgang() {
+    try { await dbDelete(vandaagProgSleutel()); } catch {}
   }
 
-  /**
-   * Verwijdert SR-entries die horen bij een specifiek artikel.
-   * IDs zijn gebouwd als `{artikelBasis}_s{n}_v{n}`.
-   */
-  function verwijderLesUitSR(artikelTitelStr) {
+  async function verwijderLesUitSR(artikelTitelStr) {
     const basis = artikelTitelStr.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 40);
-    const sr    = haalSRData().filter(item => !item.id.startsWith(basis));
-    slaSRDataOp(sr);
+    const sr    = (await haalSRData()).filter(item => !item.id.startsWith(basis));
+    await slaSRDataOp(sr);
   }
+
+  async function haalCategorieën() {
+    try {
+      const raw = await dbGet(LS_CATS);
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  }
+
+  async function slaCategoriënOp(cats) {
+    try { await dbSet(LS_CATS, JSON.stringify(cats)); } catch {}
+  }
+
+  async function registreerCategorie(naam, kleur) {
+    if (!naam || !kleur) return;
+    const cats = await haalCategorieën();
+    if (!cats.find(c => c.naam === naam)) {
+      cats.push({ naam, kleur });
+      await slaCategoriënOp(cats);
+    }
+  }
+
+  // ════════════════════════════════════════
+  // CATEGORIE & KLEUR SYSTEEM
+  // ════════════════════════════════════════
+
+  function hexNaarRgb(hex) {
+    const clean = (hex || '').replace('#', '');
+    if (!/^[0-9a-fA-F]{6}$/.test(clean)) return '200, 169, 110';
+    return [
+      parseInt(clean.slice(0, 2), 16),
+      parseInt(clean.slice(2, 4), 16),
+      parseInt(clean.slice(4, 6), 16)
+    ].join(', ');
+  }
+
+  function pasCategorieKleurToe(kleur) {
+    if (!kleur || !/^#[0-9a-fA-F]{6}$/i.test(kleur)) kleur = '#c8a96e';
+    document.documentElement.style.setProperty('--les-kleur', kleur);
+    document.documentElement.style.setProperty('--les-kleur-rgb', hexNaarRgb(kleur));
+  }
+
+  let huidigeCategorieKleur = '#c8a96e';
+  let huidigeCategorieNaam  = '';
 
   // ════════════════════════════════════════
   // LAYOUT TOGGLE
@@ -1213,51 +1609,8 @@
     return d.getTime();
   }
 
-  function lastSessionToday() {
-    return localStorage.getItem(LS_LAST_SESSION) === new Date().toISOString().slice(0, 10);
-  }
-
-  function markSessionDone() {
-    localStorage.setItem(LS_LAST_SESSION, new Date().toISOString().slice(0, 10));
-  }
-
   // ════════════════════════════════════════
-  // LOCALSTORAGE HELPERS
-  // ════════════════════════════════════════
-  function haalKey()   { return localStorage.getItem(LS_KEY) || ''; }
-  function slaKeyOp(k) { localStorage.setItem(LS_KEY, k.trim()); }
-
-  function haalGecachedeLes() {
-    try {
-      const raw = localStorage.getItem(vandaagSleutel());
-      return raw ? JSON.parse(raw) : null;
-    } catch { return null; }
-  }
-
-  function slaLesOp(lesObj) {
-    try {
-      localStorage.setItem(vandaagSleutel(), JSON.stringify(lesObj));
-    } catch {
-      for (const key of Object.keys(localStorage)) {
-        if (key.startsWith('wikileer_les_') && key !== vandaagSleutel()) {
-          localStorage.removeItem(key);
-        }
-      }
-      try { localStorage.setItem(vandaagSleutel(), JSON.stringify(lesObj)); } catch {}
-    }
-  }
-
-  function haalSRData() {
-    try { return JSON.parse(localStorage.getItem(LS_SR) || '[]'); }
-    catch { return []; }
-  }
-
-  function slaSRDataOp(data) {
-    localStorage.setItem(LS_SR, JSON.stringify(data));
-  }
-
-  // ════════════════════════════════════════
-  // MEMORY SHIELD — SR ALGORITME
+  // SR ALGORITME
   // ════════════════════════════════════════
   function getMaxStep(strength) {
     if (strength < 20) return 0;
@@ -1268,9 +1621,19 @@
     return 5;
   }
 
-  function getDueItems() {
-    const sr = haalSRData();
-    const threshold = lastSessionToday() ? Date.now() : getEndOfDay();
+  async function lastSessionToday() {
+    const val = await dbGet(LS_LAST_SESSION);
+    return val === new Date().toISOString().slice(0, 10);
+  }
+
+  async function markSessionDone() {
+    try { await dbSet(LS_LAST_SESSION, new Date().toISOString().slice(0, 10)); } catch {}
+  }
+
+  async function getDueItems() {
+    const sr      = await haalSRData();
+    const vandaag = await lastSessionToday();
+    const threshold = vandaag ? Date.now() : getEndOfDay();
     return sr
       .filter(item => item.next_due && item.next_due <= threshold)
       .sort((a, b) => {
@@ -1281,8 +1644,8 @@
       });
   }
 
-  function registreerAntwoord({ id, vraag, type, antwoordData, goed }) {
-    const sr  = haalSRData();
+  async function registreerAntwoord({ id, vraag, type, antwoordData, goed }) {
+    const sr  = await haalSRData();
     const idx = sr.findIndex(v => v.id === id);
     const now    = Date.now();
     const morgen = getTomorrow();
@@ -1301,6 +1664,8 @@
       sr.push({
         id, vraag, type,
         ...antwoordData,
+        categorieKleur: huidigeCategorieKleur,
+        categorieNaam:  huidigeCategorieNaam,
         strength, interval_step, next_due,
         streak:    goed ? 1 : 0,
         last_seen: now
@@ -1310,6 +1675,11 @@
       const item = sr[idx];
       Object.assign(item, antwoordData);
       item.last_seen = now;
+
+      if (!item.categorieKleur && huidigeCategorieKleur) {
+        item.categorieKleur = huidigeCategorieKleur;
+        item.categorieNaam  = huidigeCategorieNaam;
+      }
 
       if (goed) {
         item.streak        = (item.streak || 0) + 1;
@@ -1325,7 +1695,7 @@
       }
     }
 
-    slaSRDataOp(sr);
+    await slaSRDataOp(sr);
   }
 
   function maakVraagId(artikelTitel, sectieIndex, vraagIndex) {
@@ -1340,70 +1710,81 @@
   }
 
   // ════════════════════════════════════════
-  // INIT
+  // DATUM IN HEADER
   // ════════════════════════════════════════
   document.getElementById('header-datum').textContent =
     new Date().toLocaleDateString('nl-NL', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
     });
 
-  // Herstel layout vóór render
-  herstelLayout();
-
-  function init() {
-    const key = haalKey();
+  // ════════════════════════════════════════
+  // INIT
+  // ════════════════════════════════════════
+  async function init() {
+    const key = await haalKey();
     if (!key) {
       document.getElementById('key-scherm').classList.add('zichtbaar');
     } else {
-      toonHomescreen();
+      await toonHomescreen();
     }
   }
 
-  function toonHomescreen() {
+  // ════════════════════════════════════════
+  // HOMESCREEN
+  // ════════════════════════════════════════
+  async function toonHomescreen() {
     document.getElementById('key-scherm').classList.remove('zichtbaar');
     document.getElementById('key-knop-header').style.display = 'flex';
     document.getElementById('homescreen').classList.add('zichtbaar');
 
-    const cache      = haalGecachedeLes();
-    const voortgang  = haalVoortgang();
-    const knopLes    = document.getElementById('knop-les');
-    const melding    = document.getElementById('cache-melding');
+    const cache     = await haalGecachedeLes();
+    const voortgang = await haalVoortgang();
+    const knopLes   = document.getElementById('knop-les');
+    const melding   = document.getElementById('cache-melding');
+    const chip      = document.getElementById('categorie-chip');
+
+    if (cache && cache.categorieKleur) {
+      huidigeCategorieKleur = cache.categorieKleur;
+      huidigeCategorieNaam  = cache.categorie || '';
+      pasCategorieKleurToe(cache.categorieKleur);
+      document.getElementById('categorie-dot').style.background = cache.categorieKleur;
+      document.getElementById('categorie-naam-tekst').textContent = cache.categorie || '';
+      chip.style.display = '';
+    } else {
+      chip.style.display = 'none';
+    }
 
     if (!cache) {
-      // Geen les van vandaag — verse start
-      knopLes.textContent  = 'Maak les van vandaag';
-      knopLes.onclick      = maakLes;
+      knopLes.textContent   = 'Maak les van vandaag';
+      knopLes.onclick       = maakLes;
       knopLes.style.display = '';
     } else if (voortgang && voortgang.voltooid) {
-      // Les volledig afgemaakt
-      knopLes.innerHTML    = 'Les van vandaag al gemaakt <span class="hervatten-badge">✓ voltooid</span>';
-      knopLes.onclick      = toonAlGemaaktModal;
+      knopLes.innerHTML     = 'Les van vandaag al gemaakt <span class="hervatten-badge">✓ voltooid</span>';
+      knopLes.onclick       = toonAlGemaaktModal;
       knopLes.style.display = '';
-      melding.textContent  = `✓ Klaar met "${cache.titel}"`;
+      melding.textContent   = `✓ Klaar met "${cache.titel}"`;
       melding.style.display = 'block';
     } else if (voortgang && !voortgang.voltooid) {
-      // Halverwege gestopt — hervatten
-      const sectieTekst = `deel ${voortgang.sectieIndex + 1} van ${cache.secties.length}`;
-      knopLes.innerHTML    = `Les hervatten <span class="hervatten-badge">bij ${sectieTekst}</span>`;
-      knopLes.onclick      = maakLes;
+      const sectieTekst     = `pagina ${voortgang.sectieIndex + 1} van ${cache.secties.length}`;
+      knopLes.innerHTML     = `Les hervatten <span class="hervatten-badge">bij ${sectieTekst}</span>`;
+      knopLes.onclick       = maakLes;
       knopLes.style.display = '';
-      melding.textContent  = `Bezig met "${cache.titel}"`;
+      melding.textContent   = `Bezig met "${cache.titel}"`;
       melding.style.display = 'block';
     } else {
-      // Cache bestaat maar nog geen voortgang (nooit geopend)
-      knopLes.textContent  = `Les van vandaag hervatten`;
-      knopLes.onclick      = maakLes;
+      knopLes.textContent   = `Les van vandaag hervatten`;
+      knopLes.onclick       = maakLes;
       knopLes.style.display = '';
-      melding.textContent  = `✓ Les van vandaag staat klaar — "${cache.titel}"`;
+      melding.textContent   = `✓ Les van vandaag staat klaar — "${cache.titel}"`;
       melding.style.display = 'block';
     }
 
-    const dueItems = getDueItems();
+    const dueItems = await getDueItems();
     if (dueItems.length > 0) {
       toonSRReview(dueItems);
-      // Verberg les-knop en melding totdat SR-review afgerond is
-      knopLes.style.display  = 'none';
-      melding.style.display  = 'none';
+      knopLes.style.display = 'none';
+      melding.style.display = 'none';
+      chip.style.display    = 'none';
     }
   }
 
@@ -1442,8 +1823,20 @@
       const blok = document.createElement('div');
       blok.className = 'vraag-blok';
 
-      const strength = item.strength ?? 20;
-      const kleur    = sterktekleur(strength);
+      const itemKleur = item.categorieKleur || '#c8a96e';
+      const itemRgb   = hexNaarRgb(itemKleur);
+      blok.style.background   = `rgba(${itemRgb}, 0.05)`;
+      blok.style.border       = `1px solid rgba(${itemRgb}, 0.18)`;
+      blok.style.borderRadius = '8px';
+      blok.style.padding      = '1.1rem 1.2rem';
+      blok.style.marginBottom = '1.5rem';
+
+      const strength  = item.strength ?? 20;
+      const kleur     = sterktekleur(strength);
+      const catTagHtml = item.categorieNaam
+        ? `<span class="sr-cat-tag" style="background:rgba(${itemRgb},0.15);color:${itemKleur}">● ${item.categorieNaam}</span>`
+        : '';
+
       const sterkteMeter = `
         <div class="sr-sterkte-balk-wrap">
           <span class="sr-sterkte-label">Sterkte</span>
@@ -1451,12 +1844,13 @@
             <div class="sr-sterkte-vulling" style="width:${strength}%; background:${kleur}"></div>
           </div>
           <span class="sr-sterkte-label">${strength}%</span>
+          ${catTagHtml}
         </div>`;
 
       if (item.type === 'meerkeuze') {
         blok.innerHTML = `
           ${sterkteMeter}
-          <div class="vraag-tekst">${hi + 1}. ${item.vraag}</div>
+          <div class="vraag-tekst" style="color:var(--text)">${hi + 1}. ${item.vraag}</div>
           <div class="opties-grid" id="sr-opties-${hi}">
             ${item.opties.map((opt, oi) =>
               `<button class="optie-knop" data-oi="${oi}">${opt}</button>`
@@ -1480,11 +1874,16 @@
             const fb = document.getElementById(`sr-feedback-${hi}`);
             fb.textContent = goed ? '✓ Correct!' : `✗ Het juiste antwoord is: ${item.goed}`;
             fb.className   = `feedback ${goed ? 'goed' : 'fout'}`;
+            fb.style.color = goed ? 'var(--goed)' : 'var(--fout)';
 
+            const voorheen = [huidigeCategorieKleur, huidigeCategorieNaam];
+            huidigeCategorieKleur = itemKleur;
+            huidigeCategorieNaam  = item.categorieNaam || '';
             registreerAntwoord({
               id: item.id, vraag: item.vraag, type: 'meerkeuze',
               antwoordData: { opties: item.opties, goed: item.goed }, goed
             });
+            [huidigeCategorieKleur, huidigeCategorieNaam] = voorheen;
 
             state[hi] = { beantwoord: true, goed };
             checkAllesSR();
@@ -1494,7 +1893,7 @@
       } else {
         blok.innerHTML = `
           ${sterkteMeter}
-          <div class="vraag-tekst">${hi + 1}. ${item.vraag}</div>
+          <div class="vraag-tekst" style="color:var(--text)">${hi + 1}. ${item.vraag}</div>
           <div class="open-invoer-wrap">
             <input type="text" class="open-invoer" id="sr-open-${hi}" placeholder="Jouw antwoord..."/>
             <button class="open-invoer-knop" id="sr-knop-${hi}">Controleer</button>
@@ -1503,6 +1902,9 @@
         `;
         const invoerEl = blok.querySelector(`#sr-open-${hi}`);
         const knopEl   = blok.querySelector(`#sr-knop-${hi}`);
+
+        invoerEl.addEventListener('focus', () => { invoerEl.style.borderColor = itemKleur; });
+        invoerEl.addEventListener('blur',  () => { if (!state[hi].beantwoord) invoerEl.style.borderColor = ''; });
 
         const controleer = () => {
           if (state[hi].beantwoord) return;
@@ -1517,11 +1919,16 @@
           const fb = document.getElementById(`sr-feedback-${hi}`);
           fb.textContent = goed ? '✓ Correct!' : `✗ Het antwoord was: ${item.antwoord}`;
           fb.className   = `feedback ${goed ? 'goed' : 'fout'}`;
+          fb.style.color = goed ? 'var(--goed)' : 'var(--fout)';
 
+          const voorheen = [huidigeCategorieKleur, huidigeCategorieNaam];
+          huidigeCategorieKleur = itemKleur;
+          huidigeCategorieNaam  = item.categorieNaam || '';
           registreerAntwoord({
             id: item.id, vraag: item.vraag, type: 'open',
             antwoordData: { antwoord: item.antwoord }, goed
           });
+          [huidigeCategorieKleur, huidigeCategorieNaam] = voorheen;
 
           state[hi] = { beantwoord: true, goed };
           checkAllesSR();
@@ -1535,34 +1942,41 @@
     });
   }
 
-  function afrondSRReview() {
-    markSessionDone();
+  async function afrondSRReview() {
+    await markSessionDone();
     document.getElementById('sr-review-wrap').style.display = 'none';
 
-    // Herstel les-knop en melding op basis van actuele staat
-    const cache     = haalGecachedeLes();
-    const voortgang = haalVoortgang();
+    const cache     = await haalGecachedeLes();
+    const voortgang = await haalVoortgang();
     const knopLes   = document.getElementById('knop-les');
     const melding   = document.getElementById('cache-melding');
+    const chip      = document.getElementById('categorie-chip');
+
+    if (cache && cache.categorieKleur) {
+      pasCategorieKleurToe(cache.categorieKleur);
+      document.getElementById('categorie-dot').style.background = cache.categorieKleur;
+      document.getElementById('categorie-naam-tekst').textContent = cache.categorie || '';
+      chip.style.display = '';
+    }
 
     if (!cache) {
-      knopLes.textContent   = 'Maak les van vandaag';
-      knopLes.onclick       = maakLes;
+      knopLes.textContent = 'Maak les van vandaag';
+      knopLes.onclick     = maakLes;
     } else if (voortgang && voortgang.voltooid) {
-      knopLes.innerHTML     = 'Les van vandaag al gemaakt <span class="hervatten-badge">✓ voltooid</span>';
-      knopLes.onclick       = toonAlGemaaktModal;
-      melding.textContent   = `✓ Klaar met "${cache.titel}"`;
+      knopLes.innerHTML   = 'Les van vandaag al gemaakt <span class="hervatten-badge">✓ voltooid</span>';
+      knopLes.onclick     = toonAlGemaaktModal;
+      melding.textContent = `✓ Klaar met "${cache.titel}"`;
       melding.style.display = 'block';
     } else if (voortgang && !voortgang.voltooid) {
-      const sectieTekst     = `deel ${voortgang.sectieIndex + 1} van ${cache.secties.length}`;
-      knopLes.innerHTML     = `Les hervatten <span class="hervatten-badge">bij ${sectieTekst}</span>`;
-      knopLes.onclick       = maakLes;
-      melding.textContent   = `Bezig met "${cache.titel}"`;
+      const sectieTekst   = `pagina ${voortgang.sectieIndex + 1} van ${cache.secties.length}`;
+      knopLes.innerHTML   = `Les hervatten <span class="hervatten-badge">bij ${sectieTekst}</span>`;
+      knopLes.onclick     = maakLes;
+      melding.textContent = `Bezig met "${cache.titel}"`;
       melding.style.display = 'block';
     } else {
-      knopLes.textContent   = 'Les van vandaag hervatten';
-      knopLes.onclick       = maakLes;
-      melding.textContent   = `✓ Les van vandaag staat klaar — "${cache.titel}"`;
+      knopLes.textContent = 'Les van vandaag hervatten';
+      knopLes.onclick     = maakLes;
+      melding.textContent = `✓ Les van vandaag staat klaar — "${cache.titel}"`;
       melding.style.display = 'block';
     }
 
@@ -1573,7 +1987,7 @@
   // ════════════════════════════════════════
   // KEY BEHEER
   // ════════════════════════════════════════
-  function slaKeyOpEnStart() {
+  async function slaKeyOpEnStart() {
     const invoer = document.getElementById('key-invoer-setup').value.trim();
     const fout   = document.getElementById('key-fout-setup');
     if (!invoer.startsWith('AIza') || invoer.length < 20) {
@@ -1581,8 +1995,8 @@
       return;
     }
     fout.textContent = '';
-    slaKeyOp(invoer);
-    toonHomescreen();
+    await slaKeyOp(invoer);
+    await toonHomescreen();
   }
 
   function toonKeyModal() {
@@ -1596,16 +2010,15 @@
     document.getElementById('key-modal').classList.remove('zichtbaar');
   }
 
-  function slaKeyOpViaModal() {
+  async function slaKeyOpViaModal() {
     const invoer = document.getElementById('key-invoer-modal').value.trim();
     const fout   = document.getElementById('key-fout-modal');
     if (!invoer.startsWith('AIza') || invoer.length < 20) {
       fout.textContent = 'Vul een geldige Gemini API key in (begint met AIza...)';
       return;
     }
-    slaKeyOp(invoer);
+    await slaKeyOp(invoer);
     sluitKeyModal();
-    // Bevestiging via toast
     toonToast('✓ API key opgeslagen');
   }
 
@@ -1620,16 +2033,17 @@
     document.getElementById('algemaakt-modal').classList.remove('zichtbaar');
   }
 
-  function herbeginLes() {
+  async function herbeginLes() {
     sluitAlGemaaktModal();
-    const cache = haalGecachedeLes();
-    if (cache) {
-      verwijderLesUitSR(cache.titel);  // Verwijder alleen antwoorden van DEZE les
-    }
-    verwijderVoortgang();               // Reset voortgang
-    // Lesson cache blijft — geen nieuwe API-call nodig, zelfde artikel opnieuw
-    maakLes();
+    const cache = await haalGecachedeLes();
+    if (cache) await verwijderLesUitSR(cache.titel);
+    await verwijderVoortgang();
+    await maakLes();
   }
+
+  // ════════════════════════════════════════
+  // STATUS / LAADBALK
+  // ════════════════════════════════════════
   let schijnInterval = null;
 
   function setStatus(tekst, voortgang, shimmer = false) {
@@ -1704,12 +2118,19 @@
   // GEMINI
   // ════════════════════════════════════════
   async function verwerkMetGemini(titel, tekst) {
-    const key = haalKey();
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+    const key  = await haalKey();
+    const cats = await haalCategorieën();
+    const url  = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
 
     const ingekorte = tekst.length > MAX_TEKST
       ? tekst.slice(0, MAX_TEKST) + '\n\n[tekst ingekort]'
       : tekst;
+
+    const catsTekst = cats.length > 0
+      ? `Bestaande categorieën (gebruik er één als die goed past):\n${JSON.stringify(cats.map(c => ({ naam: c.naam, kleur: c.kleur })), null, 2)}`
+      : 'Er zijn nog geen bestaande categorieën — maak een nieuwe aan.';
+
+    const bestaandeKleuren = cats.map(c => c.kleur).join(', ') || 'geen';
 
     const prompt = `Je bent een professionele schrijver en leraar die Wikipedia-artikelen omzet naar heldere, boeiende lessen.
 
@@ -1730,10 +2151,27 @@ VRAGENREGELS:
 - Meerkeuze-afleidopties moeten plausibel zijn, niet makkelijk te raden door eliminatie
 - Minstens de helft van de vragen per sectie moet gaan over waarom iets zo is, waardoor iets gebeurde, wat het gevolg was, of wat het verband is tussen twee concepten
 
+FASE 0 — CATEGORIE & KLEUR (doe dit nadat je de secties hebt bepaald):
+Kijk naar de volledige les en bepaal de dominante subcategorie (kort, Nederlands, max 20 tekens).
+Voorbeelden: "Biologie", "Middeleeuwse geschiedenis", "Sterrenkunde", "Filosofie", "Architectuur", "Hedendaagse politiek", "Technologie", "Geografie", "Kunst & cultuur".
+
+${catsTekst}
+
+Regels voor categorieën:
+- Past een bestaande categorie goed? → Gebruik exact dezelfde naam en kleur.
+- Geen passende categorie? → Maak een nieuwe aan. Kies een leesbare hex-kleur die:
+  • Goed leesbaar is op een donkere achtergrond (#0f0f0f)
+  • Niet te donker is (perceived lightness > 50%)
+  • Niet bruin, zwart of wit is
+  • Duidelijk anders is dan de bestaande kleuren: ${bestaandeKleuren}
+  Goede voorbeelden: #7cb9e8, #e07b6a, #82d4b0, #c9a0dc, #f4c56a, #6fbad4, #e8926a
+
 GEEF JE ANTWOORD UITSLUITEND ALS GELDIGE JSON — geen uitleg, geen markdown, geen backticks.
 
 JSON STRUCTUUR:
 {
+  "categorie": "Naam van de categorie",
+  "categorieKleur": "#hexkleur",
   "secties": [
     {
       "titel": "Titel van de sectie",
@@ -1788,14 +2226,21 @@ ${ingekorte}`;
     if (eersteAccolade !== -1 && laatsteAccolade !== -1)
       schoon = schoon.slice(eersteAccolade, laatsteAccolade + 1);
 
+    let lesObj;
     try {
-      return JSON.parse(schoon);
+      lesObj = JSON.parse(schoon);
     } catch {
       const afgekort = !ruwe.trimEnd().endsWith('}');
       if (afgekort)
         throw new Error('Gemini-antwoord werd afgekapt. Probeer het opnieuw — bij een lang artikel kan dit soms voorkomen.');
       throw new Error('Kon JSON niet verwerken. Eerste 300 tekens: ' + ruwe.slice(0, 300));
     }
+
+    if (lesObj.categorie && lesObj.categorieKleur) {
+      await registreerCategorie(lesObj.categorie, lesObj.categorieKleur);
+    }
+
+    return lesObj;
   }
 
   // ════════════════════════════════════════
@@ -1808,11 +2253,16 @@ ${ingekorte}`;
     document.getElementById('knop-les').disabled = true;
     document.getElementById('fout-wrap').innerHTML = '';
 
-    const cache = haalGecachedeLes();
+    const cache = await haalGecachedeLes();
     if (cache) {
       lesData      = { secties: cache.secties };
       artikelTitel = cache.titel;
-      startLes();
+
+      huidigeCategorieKleur = cache.categorieKleur || '#c8a96e';
+      huidigeCategorieNaam  = cache.categorie || '';
+      pasCategorieKleurToe(huidigeCategorieKleur);
+
+      await startLes();
       return;
     }
 
@@ -1824,18 +2274,27 @@ ${ingekorte}`;
       const { titel, tekst } = await haalVolledigeTekst(naam);
       artikelTitel = titel;
 
-      setStatus('Gemini verwerkt het artikel...', 45, true);
+      setStatus('Gemini verwerkt het artikel en bepaalt de categorie...', 45, true);
       startSchijnVoortgang(45, 88);
       lesData = await verwerkMetGemini(titel, tekst);
 
       stopSchijnVoortgang();
       setStatus('Les klaar!', 100);
 
-      slaLesOp({ titel: artikelTitel, secties: lesData.secties });
+      huidigeCategorieKleur = lesData.categorieKleur || '#c8a96e';
+      huidigeCategorieNaam  = lesData.categorie || '';
+      pasCategorieKleurToe(huidigeCategorieKleur);
 
-      setTimeout(() => {
+      await slaLesOp({
+        titel:          artikelTitel,
+        secties:        lesData.secties,
+        categorie:      lesData.categorie,
+        categorieKleur: lesData.categorieKleur
+      });
+
+      setTimeout(async () => {
         verbergStatus();
-        startLes();
+        await startLes();
       }, 400);
 
     } catch (err) {
@@ -1850,22 +2309,24 @@ ${ingekorte}`;
   // ════════════════════════════════════════
   let huidigeSectie    = 0;
   let sessieAntwoorden = [];
+  let huidigeVraagState = [];
 
   function updateVoortgangsbalk() {
     const pct = Math.round((huidigeSectie / lesData.secties.length) * 100);
     document.getElementById('les-voortgang-balk').style.width = pct + '%';
   }
 
-  function startLes() {
+  async function startLes() {
     document.getElementById('homescreen').classList.remove('zichtbaar');
+    pasCategorieKleurToe(huidigeCategorieKleur);
+
     const voortgang = document.getElementById('les-voortgang');
     voortgang.classList.remove('vervaag');
     voortgang.classList.add('zichtbaar');
     document.getElementById('les-scherm').classList.add('zichtbaar');
     sessieAntwoorden = [];
 
-    // Herstel sectie-positie uit opgeslagen voortgang
-    const opgeslagen = haalVoortgang();
+    const opgeslagen = await haalVoortgang();
     huidigeSectie = (opgeslagen && !opgeslagen.voltooid && opgeslagen.sectieIndex)
       ? opgeslagen.sectieIndex
       : 0;
@@ -1876,16 +2337,21 @@ ${ingekorte}`;
   function toonSectie(index) {
     const sectie = lesData.secties[index];
     const totaal = lesData.secties.length;
+    huidigeVraagState = [];
 
     updateVoortgangsbalk();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Sla huidige positie op (niet voltooid)
     slaVoortgangOp({ sectieIndex: index, voltooid: false, titel: artikelTitel });
 
+    // Reader header — Image 2 style
     document.getElementById('sectie-label-tekst').textContent  = artikelTitel;
-    document.getElementById('sectie-nummer-tekst').textContent = ` — deel ${index + 1} van ${totaal}`;
     document.getElementById('sectie-titel').textContent        = sectie.titel;
+    document.getElementById('sectie-nummer-tekst').textContent = `Pagina ${index + 1} van ${totaal}`;
+
+    // Sync category color dot (hidden, for JS compat only)
+    const dot = document.getElementById('sectie-label-dot');
+    if (huidigeCategorieKleur) dot.style.background = huidigeCategorieKleur;
 
     const tekstEl = document.getElementById('sectie-tekst');
     tekstEl.innerHTML = '';
@@ -1909,23 +2375,27 @@ ${ingekorte}`;
     }
 
     document.getElementById('vragen-sectie').style.display     = 'none';
-    document.getElementById('knop-gelezen-wrap').style.display = 'flex';
+    document.getElementById('knop-gelezen-wrap').style.display = 'block';
     document.getElementById('knop-volgende').disabled          = true;
+    document.getElementById('knop-volgende').textContent       = index === totaal - 1 ? 'Afronden →' : 'Volgende →';
   }
 
   function toonVragen() {
     document.getElementById('knop-gelezen-wrap').style.display = 'none';
     document.getElementById('vragen-sectie').style.display     = 'block';
+    document.getElementById('knop-weetniets').style.display    = 'inline-block';
 
     const sectie = lesData.secties[huidigeSectie];
     const inhoud = document.getElementById('vragen-inhoud');
     inhoud.innerHTML = '';
 
-    const vraagState = sectie.vragen.map(() => ({ beantwoord: false }));
+    huidigeVraagState = sectie.vragen.map(() => ({ beantwoord: false }));
 
     function checkAlles() {
-      if (vraagState.every(v => v.beantwoord))
-        document.getElementById('knop-volgende').disabled = false;
+      if (huidigeVraagState.every(v => v.beantwoord)) {
+        document.getElementById('knop-volgende').disabled      = false;
+        document.getElementById('knop-weetniets').style.display = 'none';
+      }
     }
 
     sectie.vragen.forEach((vraag, vi) => {
@@ -1945,7 +2415,7 @@ ${ingekorte}`;
         `;
         blok.querySelectorAll('.optie-knop').forEach(knop => {
           knop.addEventListener('click', function () {
-            if (vraagState[vi].beantwoord) return;
+            if (huidigeVraagState[vi].beantwoord) return;
             const gekozen = vraag.opties[parseInt(this.dataset.oi)];
             const goed    = gekozen === vraag.goed;
 
@@ -1966,7 +2436,7 @@ ${ingekorte}`;
               antwoordData: { opties: vraag.opties, goed: vraag.goed }, goed
             });
 
-            vraagState[vi].beantwoord = true;
+            huidigeVraagState[vi].beantwoord = true;
             checkAlles();
           });
         });
@@ -1984,7 +2454,7 @@ ${ingekorte}`;
         const knopEl   = blok.querySelector(`#open-knop-${vi}`);
 
         const controleer = () => {
-          if (vraagState[vi].beantwoord) return;
+          if (huidigeVraagState[vi].beantwoord) return;
           const invoer = invoerEl.value.trim();
           if (!invoer) return;
 
@@ -2003,7 +2473,7 @@ ${ingekorte}`;
             antwoordData: { antwoord: vraag.antwoord }, goed
           });
 
-          vraagState[vi].beantwoord = true;
+          huidigeVraagState[vi].beantwoord = true;
           checkAlles();
         };
 
@@ -2015,6 +2485,49 @@ ${ingekorte}`;
     });
 
     window.scrollTo({ top: document.getElementById('vragen-sectie').offsetTop - 80, behavior: 'smooth' });
+  }
+
+  // "Ik weet het niet" — marks all unanswered questions as wrong
+  function markeerAllesFout() {
+    const sectie = lesData.secties[huidigeSectie];
+    sectie.vragen.forEach((vraag, vi) => {
+      if (huidigeVraagState[vi].beantwoord) return;
+
+      const vraagId = maakVraagId(artikelTitel, huidigeSectie, vi);
+
+      if (vraag.type === 'meerkeuze') {
+        const opties = document.querySelectorAll(`#opties-${vi} .optie-knop`);
+        opties.forEach(k => {
+          k.disabled = true;
+          if (k.textContent === vraag.goed) k.classList.add('goed');
+        });
+        const fb = document.getElementById(`feedback-${vi}`);
+        fb.textContent = `✗ Het juiste antwoord is: ${vraag.goed}`;
+        fb.className = 'feedback fout';
+      } else {
+        const invoerEl = document.getElementById(`open-invoer-${vi}`);
+        const knopEl   = document.getElementById(`open-knop-${vi}`);
+        if (invoerEl) { invoerEl.disabled = true; invoerEl.classList.add('fout'); }
+        if (knopEl) knopEl.disabled = true;
+        const fb = document.getElementById(`feedback-${vi}`);
+        fb.textContent = `✗ Het antwoord was: ${vraag.antwoord}`;
+        fb.className = 'feedback fout';
+      }
+
+      sessieAntwoorden.push({ sectieIndex: huidigeSectie, vraagIndex: vi, id: vraagId, goed: false });
+      registreerAntwoord({
+        id: vraagId, vraag: vraag.vraag, type: vraag.type,
+        antwoordData: vraag.type === 'meerkeuze'
+          ? { opties: vraag.opties, goed: vraag.goed }
+          : { antwoord: vraag.antwoord },
+        goed: false
+      });
+
+      huidigeVraagState[vi].beantwoord = true;
+    });
+
+    document.getElementById('knop-volgende').disabled      = false;
+    document.getElementById('knop-weetniets').style.display = 'none';
   }
 
   // ── Fuzzy matching ──
@@ -2059,8 +2572,6 @@ ${ingekorte}`;
       startHerhaling();
     } else {
       toonSectie(huidigeSectie);
-      if (huidigeSectie === lesData.secties.length - 1)
-        document.getElementById('knop-volgende').textContent = 'Afronden →';
     }
   }
 
@@ -2087,10 +2598,11 @@ ${ingekorte}`;
   function toonHerhalingsRonde() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    document.getElementById('sectie-label-tekst').textContent  = 'Herhaling';
+    // Use the reader-header format for the repeat round too
+    document.getElementById('sectie-label-tekst').textContent  = artikelTitel;
+    document.getElementById('sectie-titel').textContent        = 'Nog niet helemaal...';
     document.getElementById('sectie-nummer-tekst').textContent =
-      ` — ${herhalingsWachtrij.length} vraag${herhalingsWachtrij.length !== 1 ? 'en' : ''} opnieuw`;
-    document.getElementById('sectie-titel').textContent = 'Nog niet helemaal...';
+      `${herhalingsWachtrij.length} vraag${herhalingsWachtrij.length !== 1 ? 'en' : ''} opnieuw`;
 
     const tekstEl = document.getElementById('sectie-tekst');
     tekstEl.innerHTML = '';
@@ -2099,9 +2611,10 @@ ${ingekorte}`;
     uitleg.textContent = 'De vragen die je net fout had komen hieronder terug. Ga door totdat alles goed is.';
     tekstEl.appendChild(uitleg);
 
-    document.getElementById('tijdlijn-wrap').style.display     = 'none';
-    document.getElementById('knop-gelezen-wrap').style.display = 'none';
-    document.getElementById('vragen-sectie').style.display     = 'block';
+    document.getElementById('tijdlijn-wrap').style.display      = 'none';
+    document.getElementById('knop-gelezen-wrap').style.display  = 'none';
+    document.getElementById('vragen-sectie').style.display      = 'block';
+    document.getElementById('knop-weetniets').style.display     = 'none';
 
     const knopVolgende       = document.getElementById('knop-volgende');
     knopVolgende.disabled    = true;
@@ -2210,7 +2723,6 @@ ${ingekorte}`;
   function toonKlaarScherm() {
     document.getElementById('les-scherm').classList.remove('zichtbaar');
 
-    // Voortgangsbalk: vol zetten dan fade-out
     const balk = document.getElementById('les-voortgang-balk');
     balk.style.width = '100%';
     setTimeout(() => {
@@ -2221,22 +2733,40 @@ ${ingekorte}`;
     const goed   = sessieAntwoorden.filter(a => a.goed).length;
     const pct    = totaal > 0 ? Math.round((goed / totaal) * 100) : 0;
 
+    const catBadge = huidigeCategorieNaam
+      ? `<br/><span style="font-size:0.82rem;color:var(--muted)">● ${huidigeCategorieNaam}</span>`
+      : '';
+
     document.getElementById('klaar-stats').innerHTML =
-      `Je beantwoordde <strong>${goed} van de ${totaal} vragen</strong> goed (${pct}%).<br/>
+      `Je beantwoordde <strong>${goed} van de ${totaal} vragen</strong> goed (${pct}%).${catBadge}<br/>
       De vragen komen de komende dagen terug via spaced repetition.`;
 
     document.getElementById('klaar-scherm').classList.add('zichtbaar');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Markeer les als volledig voltooid
     slaVoortgangOp({ sectieIndex: lesData.secties.length - 1, voltooid: true, titel: artikelTitel });
     markSessionDone();
   }
 
   // ════════════════════════════════════════
-  // START
+  // START  — async bootstrap
   // ════════════════════════════════════════
-  init();
+  (async () => {
+    try {
+      db = await openDB();
+      await migreerVanLocalStorage();
+    } catch (e) {
+      console.warn('IndexedDB niet beschikbaar:', e);
+      db = null;
+      const _mem = {};
+      window.dbGet        = k     => Promise.resolve(_mem[k] ?? null);
+      window.dbSet        = (k,v) => { _mem[k] = v; return Promise.resolve(); };
+      window.dbDelete     = k     => { delete _mem[k]; return Promise.resolve(); };
+      window.dbGetAllKeys = ()    => Promise.resolve(Object.keys(_mem));
+    }
+    herstelLayout();
+    await init();
+  })();
 </script>
 
 </body>
