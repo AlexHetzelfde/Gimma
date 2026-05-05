@@ -76,7 +76,7 @@ header {
   position: sticky;
   top: 0;
   background: var(--bg);
-  z-index: 11;                            /* hoger dan andere sticky elementen */
+  z-index: 11;
 }
 
 .logo {
@@ -187,7 +187,7 @@ header {
   display: none;
   height: 4px;
   background: var(--border);
-  transition: opacity 0.6s ease;          /* expliciet toegevoegd */
+  transition: opacity 0.6s ease;
 }
 
 #les-voortgang.zichtbaar { display: block; }
@@ -207,18 +207,18 @@ header {
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
   gap: 5px 3px;
-  justify-content: flex-start;            /* schildjes links uitlijnen */
+  justify-content: flex-start;
   align-items: center;
   position: sticky;
   top: 0;
-  z-index: 9;                             /* onder header (11) */
+  z-index: 9;
 }
 
 .shield-item {
   width: 15px;
   height: 19px;
   clip-path: polygon(50% 100%, 0% 68%, 0% 0%, 100% 0%, 100% 68%);
-  background: var(--border);
+  background: var(--les-kleur);   /* <-- categorie-kleur als standaard */
   transition: background 0.3s, transform 0.25s;
   flex-shrink: 0;
   cursor: default;
@@ -739,7 +739,7 @@ header {
   background: var(--bg);
   border-top: 1px solid var(--border);
   padding: 1rem 2rem;
-  z-index: 10;                            /* onder header (11), boven shields (9) */
+  z-index: 10;
 }
 
 #terug-naar-vraag-balk .knop-gelezen {
@@ -764,13 +764,12 @@ header {
 .vraag-blok {
   margin: 0 0 1rem;
   padding: 2rem 1.75rem;
-  background: var(--les-kleur);           /* !important verwijderd (niet nodig in gewone vragen) */
+  background: var(--les-kleur);
   border: none;
   border-radius: 0;
   position: relative;
 }
 
-/* SR-review overschrijft .vraag-blok (wel !important nodig wegens inline stijlen) */
 .sr-vragen-inhoud .vraag-blok {
   background: rgba(var(--les-kleur-rgb), 0.05) !important;
   border: 1px solid rgba(var(--les-kleur-rgb), 0.15) !important;
@@ -803,13 +802,14 @@ header {
   font-family: 'DM Sans', sans-serif;
   font-size: 1rem !important;
   font-weight: 600 !important;
-  transition: transform 0.1s, opacity 0.15s;
+  transition: transform 0.1s, opacity 0.15s, background 0.15s;
   line-height: 1.4;
 }
 
 .optie-knop:hover:not(:disabled) {
   transform: translateY(-1px);
   opacity: 0.92;
+  background: #f2f2f2 !important;   /* lichte grijze highlight op hover */
 }
 
 .optie-knop:active:not(:disabled) {
@@ -906,7 +906,7 @@ header {
 
 .open-invoer-knop:disabled { opacity: 0.4; cursor: default; }
 
-/* SR review dark styling – overschrijft lichte variant */
+/* SR review dark styling */
 #sr-vragen-inhoud .open-invoer {
   background: var(--bg2);
   border: 1px solid var(--border);
