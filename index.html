@@ -228,3 +228,725 @@
 
     .knop-primair { background:var(--accent); color:#0f0f0f; border:none; padding:0.9rem 2rem; font-weight:500; border-radius:4px; cursor:pointer; }
     .knop-secundair { background:none; border:1px solid var(--border); color:var(--text); padding:0.75rem 1.75rem; border-radius:4px; cursor:pointer; }
+        /* ════════════════════════════════════════
+       LES SCHERM — READER STYLE
+    ════════════════════════════════════════ */
+
+    #les-scherm {
+      display: none;
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 0 5rem;
+      width: 100%;
+    }
+
+    #les-scherm.zichtbaar { display: block; }
+
+    /* Centered reader header */
+    .reader-header {
+      text-align: center;
+      padding: 2.5rem 2rem 2rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2.5rem;
+    }
+
+    .reader-artikel-naam {
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .reader-sectie-naam {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--les-kleur);
+      margin-bottom: 0.4rem;
+      transition: color 0.4s ease;
+    }
+
+    .reader-pagina {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .sectie-tekst {
+      font-family: 'Lora', serif;
+      font-size: 1.1rem;
+      line-height: 1.95;
+      color: var(--text);
+      padding: 0 2rem 2rem;
+    }
+
+    .sectie-tekst p { margin-bottom: 1.25rem; }
+    .sectie-tekst p:last-child { margin-bottom: 0; }
+
+    .tijdlijn-wrap {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin: 0 2rem 2rem;
+    }
+
+    .tijdlijn-kop {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 1rem;
+    }
+
+    .tijdlijn-rij {
+      display: flex;
+      gap: 1rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+      align-items: baseline;
+      font-size: 0.9rem;
+    }
+
+    .tijdlijn-rij:last-child { border-bottom: none; }
+
+    .tijdlijn-jaar {
+      color: var(--les-kleur);
+      font-weight: 500;
+      min-width: 65px;
+      flex-shrink: 0;
+    }
+
+    /* Gelezen knop */
+    #knop-gelezen-wrap {
+      display: none;
+      padding: 1.5rem 2rem;
+      border-top: 1px solid var(--border);
+      margin-top: 1rem;
+    }
+
+    .knop-gelezen {
+      width: 100%;
+      background: var(--les-kleur);
+      color: rgba(0,0,0,0.85);
+      border: none;
+      padding: 1rem 2rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 0.01em;
+    }
+
+    .knop-gelezen:hover { opacity: 0.88; transform: translateY(-1px); }
+    .knop-gelezen:active { transform: translateY(0); opacity: 1; }
+
+    /* ════════════════════════════════════════
+       VRAAG STIJLEN
+    ════════════════════════════════════════ */
+
+    .vraag-blok {
+      margin: 0 1.5rem 1rem;
+      padding: 2rem 1.75rem;
+      background: var(--les-kleur) !important;
+      border: none !important;
+      border-radius: 0;
+    }
+
+    .vraag-tekst {
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.55;
+      margin-bottom: 1.25rem;
+      color: rgba(0,0,0,0.88);
+    }
+
+    .opties-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .optie-knop {
+      background: #fff !important;
+      border: none !important;
+      border-bottom: 3px solid rgba(0,0,0,0.15) !important;
+      color: #2a2424 !important;
+      padding: 1.1rem 1.25rem !important;
+      border-radius: 14px !important;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem !important;
+      font-weight: 600 !important;
+      transition: transform 0.1s, opacity 0.15s, background 0.1s, border 0.1s;
+      line-height: 1.4;
+    }
+
+    .optie-knop.actief {
+      border: 2px solid rgba(0,0,0,0.3) !important;
+      border-bottom: 2px solid rgba(0,0,0,0.3) !important;
+      background: #f0ece4 !important;
+    }
+
+    .optie-knop:hover:not(:disabled) {
+      transform: translateY(-1px);
+      opacity: 0.92;
+    }
+
+    .optie-knop:disabled { cursor: default; }
+
+    .optie-knop.goed {
+      background: #3c9e6a !important;
+      color: #fff !important;
+      border-bottom-color: rgba(0,0,0,0.2) !important;
+    }
+
+    .optie-knop.fout {
+      background: #cc5844 !important;
+      color: #fff !important;
+      border-bottom-color: rgba(0,0,0,0.2) !important;
+    }
+
+    .optie-knop.gemist {
+      background: rgba(255,255,255,0.55) !important;
+      color: #3c9e6a !important;
+      outline: 2px solid #3c9e6a;
+      outline-offset: -2px;
+    }
+
+    .feedback {
+      margin-top: 0.85rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .feedback.goed { color: rgba(0,0,0,0.75); }
+    .feedback.fout { color: rgba(0,0,0,0.75); }
+
+    /* Open vraag styling */
+    .open-vraag-rij {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 1.2rem;
+      align-items: stretch;
+      width: 100%;
+    }
+
+    .open-invoer {
+      flex: 1;
+      min-width: 0;
+      background: rgba(255,255,255,0.92);
+      border: none;
+      border-bottom: 3px solid rgba(0,0,0,0.15);
+      color: #2a2424;
+      padding: 0.9rem 1rem;
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      outline: none;
+      transition: box-shadow 0.15s;
+    }
+
+    .open-invoer:focus {
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.25);
+    }
+
+    .open-invoer:disabled { opacity: 0.6; }
+
+    .open-invoer.goed {
+      background: #3c9e6a !important;
+      color: white;
+    }
+
+    .open-invoer.fout {
+      background: #cc5844 !important;
+      color: white;
+    }
+
+    .opzoek-knop,
+    .confirm-knop,
+    .skip-knop {
+      border: none;
+      border-radius: 12px;
+      padding: 0.9rem 1.2rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    .opzoek-knop {
+      background: rgba(0,0,0,0.18);
+      color: rgba(0,0,0,0.75);
+    }
+
+    .opzoek-knop:hover {
+      background: rgba(0,0,0,0.28);
+    }
+
+    .skip-knop {
+      background: none;
+      color: rgba(0,0,0,0.65);
+      border: 1px dashed rgba(0,0,0,0.3);
+    }
+
+    .skip-knop:hover {
+      background: rgba(0,0,0,0.08);
+    }
+
+    .confirm-knop {
+      background: rgba(0,0,0,0.12);
+      color: rgba(0,0,0,0.8);
+    }
+
+    .confirm-knop:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .confirm-knop:hover:not(:disabled) {
+      background: rgba(0,0,0,0.22);
+    }
+
+    /* Modale overlay voor opzoek-tekst */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 50;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .modal-overlay.zichtbaar { display: flex; }
+
+    .modal-inhoud {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 2rem;
+      max-width: 680px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    /* Spaced Repetition styling (donkere variant) */
+    #sr-scherm .vraag-blok {
+      background: var(--bg2) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+
+    #sr-scherm .vraag-tekst { color: var(--text); }
+
+    #sr-scherm .optie-knop {
+      background: var(--bg3) !important;
+      border: 1px solid var(--border) !important;
+      border-bottom: 1px solid var(--border) !important;
+      color: var(--text) !important;
+      font-weight: 400 !important;
+      border-radius: 12px !important;
+    }
+
+    #sr-scherm .optie-knop.actief {
+      background: var(--bg2) !important;
+      border-color: var(--les-kleur) !important;
+    }
+
+    #sr-scherm .optie-knop.goed {
+      background: rgba(90,158,122,0.12) !important;
+      border-color: var(--goed) !important;
+      color: var(--goed) !important;
+    }
+
+    #sr-scherm .optie-knop.fout {
+      background: rgba(196,106,90,0.1) !important;
+      border-color: var(--fout) !important;
+      color: var(--fout) !important;
+    }
+
+    #sr-scherm .optie-knop.gemist {
+      background: none !important;
+      outline: 1px solid var(--goed);
+      color: var(--goed) !important;
+    }
+
+    #sr-scherm .open-invoer {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    #sr-scherm .open-invoer:focus {
+      box-shadow: none;
+      border-color: var(--les-kleur);
+    }
+
+    #sr-scherm .opzoek-knop,
+    #sr-scherm .confirm-knop,
+    #sr-scherm .skip-knop {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+    }
+
+    #sr-scherm .opzoek-knop:hover {
+      border-color: var(--les-kleur);
+    }
+
+    #sr-scherm .confirm-knop {
+      background: var(--les-kleur);
+      color: #0f0f0f;
+      border: none;
+    }
+
+    .sr-voortgang {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .sr-schildje {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+
+    .sr-schildje.actief {
+      border-color: var(--les-kleur);
+      color: var(--les-kleur);
+    }
+
+    .sr-schildje.gedaan {
+      background: rgba(90,158,122,0.2);
+      border-color: var(--goed);
+      color: var(--goed);
+    }
+
+    /* ════════════════════════════════════════
+       KLAAR SCHERM
+    ════════════════════════════════════════ */
+    #klaar-scherm {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1.5rem;
+      text-align: center;
+      gap: 1.5rem;
+    }
+
+    #klaar-scherm.zichtbaar { display: flex; }
+
+    .klaar-icoon { font-size: 3rem; line-height: 1; }
+
+    .klaar-titel {
+      font-family: 'Lora', serif;
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      font-weight: 600;
+    }
+
+    .klaar-stats {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    .klaar-stats strong { color: var(--les-kleur); }
+
+    #les-voortgang { transition: opacity 0.6s ease; }
+    #les-voortgang.vervaag { opacity: 0; }
+
+    .hervatten-badge {
+      display: inline-block;
+      background: rgba(var(--les-kleur-rgb), 0.15);
+      border: 1px solid var(--les-kleur);
+      color: var(--les-kleur);
+      font-size: 0.75rem;
+      padding: 0.2rem 0.7rem;
+      border-radius: 20px;
+      margin-left: 0.5rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    #algemaakt-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    #algemaakt-modal.zichtbaar { display: flex; }
+
+    .algemaakt-icoon {
+      font-size: 2rem;
+      margin-bottom: 0.75rem;
+      line-height: 1;
+    }
+
+    .algemaakt-modal-tekst {
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.65;
+      margin-bottom: 1.5rem;
+    }
+
+    .algemaakt-modal-tekst strong {
+      color: var(--text);
+      display: block;
+      font-size: 1rem;
+      margin-bottom: 0.4rem;
+      font-family: 'Lora', serif;
+    }
+
+    .algemaakt-waarschuwing {
+      background: rgba(196, 106, 90, 0.08);
+      border: 1px solid rgba(196, 106, 90, 0.25);
+      color: var(--fout);
+      font-size: 0.8rem;
+      padding: 0.6rem 0.9rem;
+      border-radius: 6px;
+      margin-bottom: 1.25rem;
+      line-height: 1.5;
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    @media (max-width: 480px) {
+      header { padding: 1rem 1.25rem; }
+      .datum { display: none; }
+      .layout-toggle { display: none; }
+      .reader-header { padding: 2rem 1.25rem 1.75rem; }
+      .sectie-tekst { padding: 0 1.25rem 2rem; }
+      .tijdlijn-wrap { margin: 0 1.25rem 2rem; }
+      .knop-gelezen { padding: 0.9rem; }
+      #knop-gelezen-wrap { padding: 1.25rem; }
+      .vraag-blok { padding: 1.5rem 1.25rem; margin: 0 0.5rem; }
+      .open-vraag-rij { flex-wrap: wrap; }
+      .open-invoer { min-width: 100%; order: 2; }
+      .opzoek-knop { order: 1; }
+      .confirm-knop { order: 3; width: 100%; }
+    }
+
+    body.layout-telefoon .sectie-tekst { font-size: 1.05rem; line-height: 1.85; }
+    body.layout-telefoon #les-scherm { padding: 0 0 5rem; }
+    body.layout-telefoon header { padding-left: 1.25rem; padding-right: 1.25rem; }
+    body.layout-telefoon .datum { display: none; }
+    body.layout-telefoon #homescreen { padding: 2rem 1.25rem; }
+
+    .layout-indicator { display: none; }
+
+    body.layout-telefoon .layout-indicator {
+      display: block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--accent2);
+      font-size: 0.85rem;
+      padding: 0.65rem 1.2rem;
+      border-radius: 6px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      white-space: nowrap;
+      z-index: 200;
+    }
+
+    #toast.zichtbaar {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .herhaling-header {
+      text-align: center;
+      padding: 2.5rem 2rem 2rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0;
+    }
+
+    .herhaling-label {
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .herhaling-titel {
+      font-family: 'Lora', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.3rem;
+    }
+
+    .herhaling-sub {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div id="app-shell">
+
+  <div id="les-voortgang"><div id="les-voortgang-balk"></div></div>
+
+  <header>
+    <div class="logo">WikiLeer <span>dagelijks leren</span></div>
+    <div class="header-rechts">
+      <div class="datum" id="header-datum"></div>
+
+      <div class="layout-toggle" id="layout-toggle">
+        <button class="layout-knop actief" id="knop-desktop" data-tip="Desktop" onclick="setLayout('desktop')" title="Desktop layout">
+          🖥
+          <span class="layout-indicator"></span>
+        </button>
+        <button class="layout-knop" id="knop-telefoon" data-tip="Telefoon" onclick="setLayout('telefoon')" title="Telefoon layout">
+          📱
+          <span class="layout-indicator"></span>
+        </button>
+      </div>
+
+      <button class="key-knop-header" id="key-knop-header" onclick="toonKeyModal()" title="API key wijzigen" style="display:none">⚙</button>
+    </div>
+  </header>
+
+  <!-- ═══ KEY SCHERM ═══ -->
+  <div id="key-scherm">
+    <div class="key-kaart">
+      <h2>Welkom bij WikiLeer</h2>
+      <p>
+        Om lessen te genereren heb je een gratis Gemini API key nodig.<br/>
+        Haal hem op via <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a> — geen creditcard nodig.
+        De key wordt alleen lokaal opgeslagen in jouw browser, nooit verstuurd naar een server.
+      </p>
+      <div class="key-invoer-wrap">
+        <input
+          type="password"
+          class="key-invoer"
+          id="key-invoer-setup"
+          placeholder="AIza..."
+          onkeydown="if(event.key==='Enter') slaKeyOpEnStart()"
+        />
+        <button class="knop-primair" onclick="slaKeyOpEnStart()">Opslaan</button>
+      </div>
+      <div class="key-fout" id="key-fout-setup"></div>
+    </div>
+  </div>
+
+  <!-- ═══ KEY MODAL ═══ -->
+  <div id="key-modal" onclick="if(event.target===this) sluitKeyModal()">
+    <div class="modal-kaart">
+      <h3>API key wijzigen</h3>
+      <p>Je huidige key wordt vervangen. De les-cache van vandaag blijft bewaard.</p>
+      <div class="key-invoer-wrap">
+        <input
+          type="password"
+          class="key-invoer"
+          id="key-invoer-modal"
+          placeholder="AIza..."
+          onkeydown="if(event.key==='Enter') slaKeyOpViaModal()"
+        />
+      </div>
+      <div class="key-fout" id="key-fout-modal"></div>
+      <div class="modal-acties">
+        <button class="knop-primair" onclick="slaKeyOpViaModal()">Opslaan</button>
+        <button class="knop-secundair" onclick="sluitKeyModal()">Annuleren</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ AL GEMAAKT MODAL ═══ -->
+  <div id="algemaakt-modal" onclick="if(event.target===this) sluitAlGemaaktModal()">
+    <div class="modal-kaart">
+      <div class="algemaakt-icoon">🎓</div>
+      <div class="algemaakt-modal-tekst">
+        <strong>Je hebt deze les al gemaakt!</strong>
+        De vragen zijn opgeslagen en komen de komende dagen terug via spaced repetition.
+      </div>
+      <div class="algemaakt-waarschuwing">
+        ⚠ Als je opnieuw begint, worden de opgeslagen antwoorden van <em>deze les</em> gewist. Eerdere lessen blijven bewaard.
+      </div>
+      <div class="modal-acties">
+        <button class="knop-secundair" onclick="sluitAlGemaaktModal()">Nee, terug</button>
+        <button class="knop-primair" style="background:var(--fout)" onclick="herbeginLes()">Ja, opnieuw beginnen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ HOMESCREEN ═══ -->
+  <div id="homescreen">
+    <div class="hero-tekst">
+      <h1>Leer iets nieuws<br/>vandaag</h1>
+      <p>Het uitgelichte artikel van de Nederlandse Wikipedia, omgezet naar een les met vragen en dagelijkse herhaling.</p>
+    </div>
+
+    <div id="cache-melding" class="cache-melding" style="display:none"></div>
+
+    <div id="categorie-chip" style="display:none" class="categorie-chip">
+      <span class="categorie-dot" id="categorie-dot"></span>
+      <span id="categorie-naam-tekst"></span>
+    </div>
+
+    <button class="knop-primair" id="knop-les" onclick="maakLes()" style="display:none">
+      Maak les van vandaag
+    </button>
+
+    <div id="status-wrap">
+      <div id="status-tekst">Bezig...</div>
+      <div class="laadbalk-bg">
+        <div class="laadbalk-voortgang" id="laadbalk"></div>
+        <div class="laadbalk-shimmer" id="laadbalk-shimmer" style="display:none"></div>
+      </div>
+    </div>
+
+    <div id="fout-wrap"></div>
+  </div>
