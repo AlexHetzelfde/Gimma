@@ -66,6 +66,7 @@ body.layout-telefoon header { padding-top: 2rem; }
   flex-direction: column;
 }
 
+/* ---------- HEADER ---------- */
 header {
   padding: 1.25rem 2rem;
   border-bottom: 1px solid var(--border);
@@ -75,7 +76,7 @@ header {
   position: sticky;
   top: 0;
   background: var(--bg);
-  z-index: 10;
+  z-index: 11;                            /* hoger dan andere sticky elementen */
 }
 
 .logo {
@@ -181,10 +182,12 @@ header {
   color: var(--accent);
 }
 
+/* ---------- VOORTGANGSBALK ---------- */
 #les-voortgang {
   display: none;
   height: 4px;
   background: var(--border);
+  transition: opacity 0.6s ease;          /* expliciet toegevoegd */
 }
 
 #les-voortgang.zichtbaar { display: block; }
@@ -196,10 +199,7 @@ header {
   width: 0%;
 }
 
-/* ════════════════════════════════════════
-   SHIELDS BALK
-════════════════════════════════════════ */
-
+/* ---------- SHIELDS BALK ---------- */
 #shields-balk {
   display: none;
   padding: 0.55rem 1.5rem 0.5rem;
@@ -207,11 +207,11 @@ header {
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
   gap: 5px 3px;
-  justify-content: center;
+  justify-content: flex-start;            /* schildjes links uitlijnen */
   align-items: center;
   position: sticky;
   top: 0;
-  z-index: 9;
+  z-index: 9;                             /* onder header (11) */
 }
 
 .shield-item {
@@ -243,10 +243,7 @@ header {
   align-self: center;
 }
 
-/* ════════════════════════════════════════
-   KEY SCHERM
-════════════════════════════════════════ */
-
+/* ---------- KEY SCHERM ---------- */
 #key-scherm {
   display: none;
   flex: 1;
@@ -323,6 +320,7 @@ header {
   transition: opacity 0.4s;
 }
 
+/* ---------- MODALS ---------- */
 #key-modal {
   display: none;
   position: fixed;
@@ -365,6 +363,7 @@ header {
   margin-top: 1rem;
 }
 
+/* ---------- HOMESCREEN ---------- */
 #homescreen {
   flex: 1;
   display: none;
@@ -435,6 +434,7 @@ header {
   letter-spacing: 0.03em;
 }
 
+/* ---------- STATUS / LAADBALK ---------- */
 #status-wrap {
   display: none;
   flex-direction: column;
@@ -483,6 +483,7 @@ header {
   100% { left: 110%; }
 }
 
+/* ---------- SR REVIEW ---------- */
 .sr-review-wrap {
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -569,6 +570,7 @@ header {
 
 .sr-score-tekst strong { color: var(--accent2); }
 
+/* ---------- KNOPPEN ---------- */
 .knop-primair {
   background: var(--accent);
   color: #0f0f0f;
@@ -616,10 +618,7 @@ header {
   text-align: center;
 }
 
-/* ════════════════════════════════════════
-   LES SCHERM — READER STYLE
-════════════════════════════════════════ */
-
+/* ---------- LES SCHERM (READER) ---------- */
 #les-scherm {
   display: none;
   max-width: 680px;
@@ -706,10 +705,7 @@ header {
   flex-shrink: 0;
 }
 
-/* ════════════════════════════════════════
-   GELEZEN KNOP
-════════════════════════════════════════ */
-
+/* ---------- GELEZEN KNOP ---------- */
 #knop-gelezen-wrap {
   display: none;
   padding: 1.5rem 2rem;
@@ -735,10 +731,7 @@ header {
 .knop-gelezen:hover { opacity: 0.88; transform: translateY(-1px); }
 .knop-gelezen:active { transform: translateY(0); opacity: 1; }
 
-/* ════════════════════════════════════════
-   TERUG NAAR VRAAG BALK
-════════════════════════════════════════ */
-
+/* ---------- TERUG NAAR VRAAG BALK ---------- */
 #terug-naar-vraag-balk {
   display: none;
   position: sticky;
@@ -746,7 +739,7 @@ header {
   background: var(--bg);
   border-top: 1px solid var(--border);
   padding: 1rem 2rem;
-  z-index: 10;
+  z-index: 10;                            /* onder header (11), boven shields (9) */
 }
 
 #terug-naar-vraag-balk .knop-gelezen {
@@ -763,10 +756,7 @@ header {
   transform: translateY(-1px);
 }
 
-/* ════════════════════════════════════════
-   VRAGEN SECTIE — één vraag per keer
-════════════════════════════════════════ */
-
+/* ---------- VRAGEN SECTIE (één per keer) ---------- */
 #vragen-sectie {
   padding: 0 0 1rem;
 }
@@ -774,12 +764,13 @@ header {
 .vraag-blok {
   margin: 0 0 1rem;
   padding: 2rem 1.75rem;
-  background: var(--les-kleur) !important;
-  border: none !important;
+  background: var(--les-kleur);           /* !important verwijderd (niet nodig in gewone vragen) */
+  border: none;
   border-radius: 0;
   position: relative;
 }
 
+/* SR-review overschrijft .vraag-blok (wel !important nodig wegens inline stijlen) */
 .sr-vragen-inhoud .vraag-blok {
   background: rgba(var(--les-kleur-rgb), 0.05) !important;
   border: 1px solid rgba(var(--les-kleur-rgb), 0.15) !important;
@@ -915,7 +906,7 @@ header {
 
 .open-invoer-knop:disabled { opacity: 0.4; cursor: default; }
 
-/* SR review dark styling */
+/* SR review dark styling – overschrijft lichte variant */
 #sr-vragen-inhoud .open-invoer {
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -981,10 +972,7 @@ header {
 #sr-vragen-inhoud .feedback.goed { color: var(--goed); }
 #sr-vragen-inhoud .feedback.fout { color: var(--fout); }
 
-/* ════════════════════════════════════════
-   SECTIE NAV — drie knoppen
-════════════════════════════════════════ */
-
+/* ---------- SECTIE NAVIGATIE ---------- */
 .sectie-nav {
   display: flex;
   gap: 0.75rem;
@@ -1009,7 +997,6 @@ header {
 
 .knop-weetniets:hover { border-color: var(--fout); color: var(--fout); }
 
-/* Kijk op in tekst knop */
 .knop-kijkop {
   flex: 0.8;
   background: var(--bg2);
@@ -1051,10 +1038,7 @@ header {
   transform: none;
 }
 
-/* ════════════════════════════════════════
-   KLAAR SCHERM
-════════════════════════════════════════ */
-
+/* ---------- KLAAR SCHERM ---------- */
 #klaar-scherm {
   display: none;
   flex: 1;
@@ -1084,9 +1068,6 @@ header {
 
 .klaar-stats strong { color: var(--les-kleur); }
 
-#les-voortgang { transition: opacity 0.6s ease; }
-#les-voortgang.vervaag { opacity: 0; }
-
 .hervatten-badge {
   display: inline-block;
   background: rgba(200, 169, 110, 0.12);
@@ -1101,6 +1082,7 @@ header {
   letter-spacing: 0.02em;
 }
 
+/* ---------- AL GEMAAKT MODAL ---------- */
 #algemaakt-modal {
   display: none;
   position: fixed;
@@ -1146,10 +1128,12 @@ header {
   line-height: 1.5;
 }
 
+/* ---------- SCROLLBAR ---------- */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
+/* ---------- RESPONSIVE (max 480px) ---------- */
 @media (max-width: 480px) {
   header { padding: 1rem 1.25rem; }
   .datum { display: none; }
@@ -1170,6 +1154,7 @@ header {
   .knop-kijkop { font-size: 0.75rem; }
 }
 
+/* ---------- LAYOUT TELEFOON (klasse-gebaseerd) ---------- */
 body.layout-telefoon .sectie-tekst { font-size: 1.05rem; line-height: 1.85; }
 body.layout-telefoon #les-scherm { padding: 0 0 5rem; }
 body.layout-telefoon header { padding-left: 1.25rem; padding-right: 1.25rem; }
@@ -1197,6 +1182,7 @@ body.layout-telefoon .layout-indicator {
   transform: translateX(-50%);
 }
 
+/* ---------- TOAST ---------- */
 #toast {
   position: fixed;
   bottom: 2rem;
@@ -1220,6 +1206,7 @@ body.layout-telefoon .layout-indicator {
   transform: translateX(-50%) translateY(0);
 }
 
+/* ---------- HERHALING (extra header) ---------- */
 .herhaling-header {
   text-align: center;
   padding: 2.5rem 2rem 2rem;
