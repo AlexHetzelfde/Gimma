@@ -84,8 +84,12 @@ async function migreerVanLocalStorage() {
   for (const k of teVerhuizen) {
     const waarde = localStorage.getItem(k);
     if (waarde !== null) {
-      await dbSet(k, waarde);
-      localStorage.removeItem(k);
+      try {
+        await dbSet(k, waarde);
+        localStorage.removeItem(k);
+      } catch (e) {
+        console.warn('Migratie mislukt voor', k, e);
+      }
     }
   }
 
@@ -108,7 +112,10 @@ async function haalGecachedeLes() {
   try {
     const raw = await dbGet(vandaagSleutel());
     return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
+  } catch (e) {
+    console.warn('Fout bij laden gecachede les:', e);
+    return null;
+  }
 }
 
 async function slaLesOp(lesObj) {
@@ -120,18 +127,27 @@ async function slaLesOp(lesObj) {
       }
     }
     await dbSet(vandaagSleutel(), JSON.stringify(lesObj));
-  } catch {}
+  } catch (e) {
+    console.warn('Fout bij opslaan les:', e);
+  }
 }
 
 async function haalSRData() {
   try {
     const raw = await dbGet(LS_SR);
     return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+  } catch (e) {
+    console.warn('Fout bij laden SR data:', e);
+    return [];
+  }
 }
 
 async function slaSRDataOp(data) {
-  try { await dbSet(LS_SR, JSON.stringify(data)); } catch {}
+  try {
+    await dbSet(LS_SR, JSON.stringify(data));
+  } catch (e) {
+    console.warn('Fout bij opslaan SR data:', e);
+  }
 }
 
 function vandaagProgSleutel() {
@@ -142,15 +158,26 @@ async function haalVoortgang() {
   try {
     const raw = await dbGet(vandaagProgSleutel());
     return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
+  } catch (e) {
+    console.warn('Fout bij laden voortgang:', e);
+    return null;
+  }
 }
 
 async function slaVoortgangOp(obj) {
-  try { await dbSet(vandaagProgSleutel(), JSON.stringify(obj)); } catch {}
+  try {
+    await dbSet(vandaagProgSleutel(), JSON.stringify(obj));
+  } catch (e) {
+    console.warn('Fout bij opslaan voortgang:', e);
+  }
 }
 
 async function verwijderVoortgang() {
-  try { await dbDelete(vandaagProgSleutel()); } catch {}
+  try {
+    await dbDelete(vandaagProgSleutel());
+  } catch (e) {
+    console.warn('Fout bij verwijderen voortgang:', e);
+  }
 }
 
 async function verwijderLesUitSR(artikelTitelStr) {
@@ -163,11 +190,18 @@ async function haalCategorieën() {
   try {
     const raw = await dbGet(LS_CATS);
     return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+  } catch (e) {
+    console.warn('Fout bij laden categorieën:', e);
+    return [];
+  }
 }
 
 async function slaCategoriënOp(cats) {
-  try { await dbSet(LS_CATS, JSON.stringify(cats)); } catch {}
+  try {
+    await dbSet(LS_CATS, JSON.stringify(cats));
+  } catch (e) {
+    console.warn('Fout bij opslaan categorieën:', e);
+  }
 }
 
 async function registreerCategorie(naam, kleur) {
@@ -268,7 +302,11 @@ async function lastSessionToday() {
 }
 
 async function markSessionDone() {
-  try { await dbSet(LS_LAST_SESSION, new Date().toISOString().slice(0, 10)); } catch {}
+  try {
+    await dbSet(LS_LAST_SESSION, new Date().toISOString().slice(0, 10));
+  } catch (e) {
+    console.warn('Fout bij markeren sessie:', e);
+  }
 }
 
 async function getDueItems() {
@@ -1266,9 +1304,9 @@ function toonTekstLookup() {
 
   const sectie = lesData.secties[huidigeSectie];
 
-  // Header bijwerken
-  document.getElementById('sectie-nummer-tekst').textContent = sectie.titel;
-  document.getElementById('sectie-titel').textContent        = 'Kijk op in de tekst';
+  // Header bijwerken: behoud artikelnaam, toon sectietitel en hint
+  document.getElementById('sectie-titel').textContent        = sectie.titel;
+  document.getElementById('sectie-nummer-tekst').textContent = 'Kijk op in de tekst';
 
   // Tekst tonen
   document.getElementById('sectie-tekst').style.display = 'block';
