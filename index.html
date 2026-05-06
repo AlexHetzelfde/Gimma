@@ -16,7 +16,7 @@
   <div id="les-voortgang"><div id="les-voortgang-balk"></div></div>
 
   <header>
-    <div class="logo">WikiLeer <span>dagelijks leren</span></div>
+    <div class="logo" onclick="logoKlikken()" title="Terug naar home">WikiLeer <span>dagelijks leren</span></div>
     <div class="header-rechts">
       <div class="datum" id="header-datum"></div>
 
@@ -101,6 +101,21 @@
     </div>
   </div>
 
+  <!-- ═══ TERUG NAAR HOME MODAL ═══ -->
+  <div id="terug-home-modal" onclick="if(event.target===this) sluitTerugNaarHomeModal()">
+    <div class="modal-kaart">
+      <div class="algemaakt-icoon">🏠</div>
+      <div class="algemaakt-modal-tekst">
+        <strong>Les afsluiten?</strong>
+        Je voortgang wordt bewaard — je kan op elk moment verder waar je gebleven bent.
+      </div>
+      <div class="modal-acties">
+        <button class="knop-secundair" onclick="sluitTerugNaarHomeModal()">Nee, doorgaan</button>
+        <button class="knop-primair" onclick="bevestigTerugNaarHome()">Ja, terug naar home</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══ HOMESCREEN ═══ -->
   <div id="homescreen">
     <div class="hero-tekst">
@@ -158,18 +173,20 @@
       <span id="sectie-label-dot" style="display:none"></span>
     </div>
 
-    <div class="sectie-tekst" id="sectie-tekst"></div>
+    <!-- ═══ LEES KAART — donker leeskaartje ═══ -->
+    <div id="lees-kaart">
+      <div class="sectie-tekst" id="sectie-tekst"></div>
 
-    <div id="tijdlijn-wrap" class="tijdlijn-wrap" style="display:none">
-      <div class="tijdlijn-kop">Tijdlijn</div>
-      <div id="tijdlijn-inhoud"></div>
-    </div>
+      <div id="tijdlijn-wrap" class="tijdlijn-wrap" style="display:none">
+        <div class="tijdlijn-kop">Tijdlijn</div>
+        <div id="tijdlijn-inhoud"></div>
+      </div>
 
-    <!-- "Ik heb dit gelezen" bottom bar -->
-    <div id="knop-gelezen-wrap" style="display:none">
-      <button class="knop-gelezen" onclick="toonVraag(0)">
-        Ik heb dit gelezen →
-      </button>
+      <div id="knop-gelezen-wrap" style="display:none">
+        <button class="knop-gelezen" onclick="toonVraag(0)">
+          Ik heb dit gelezen →
+        </button>
+      </div>
     </div>
 
     <!-- Vragen sectie — één vraag per keer -->
@@ -207,6 +224,6 @@
 
 </div><!-- /app-shell -->
   
- <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
