@@ -465,6 +465,39 @@ async function toonHomescreen() {
     melding.style.display = 'none';
     chip.style.display    = 'none';
   }
+
+  await renderCategorieOverzicht();
+}
+
+// ════════════════════════════════════════
+// CATEGORIE OVERZICHT (homescreen)
+// ════════════════════════════════════════
+async function renderCategorieOverzicht() {
+  const cats = await haalCategorieën();
+  const el   = document.getElementById('categorie-overzicht');
+  if (!el) return;
+  if (!cats || cats.length === 0) { el.style.display = 'none'; return; }
+  el.innerHTML = cats.map(c =>
+    `<span class="cat-chip" style="border-color:rgba(${hexNaarRgb(c.kleur)},0.4);color:${c.kleur}">
+      <span class="cat-chip-dot" style="background:${c.kleur}"></span>${c.naam}
+    </span>`
+  ).join('');
+  el.style.display = 'flex';
+}
+
+// ════════════════════════════════════════
+// CATEGORIE BADGE (reader header)
+// ════════════════════════════════════════
+function updateReaderCatBadge() {
+  const el = document.getElementById('reader-cat-badge');
+  if (!el) return;
+  if (huidigeCategorieNaam) {
+    el.textContent = '● ' + huidigeCategorieNaam;
+    el.style.color = huidigeCategorieKleur || 'var(--muted)';
+    el.style.display = '';
+  } else {
+    el.style.display = 'none';
+  }
 }
 
 // ════════════════════════════════════════
@@ -660,6 +693,7 @@ async function afrondSRReview() {
   }
 
   knopLes.style.display = '';
+  await renderCategorieOverzicht();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -987,10 +1021,10 @@ async function maakLes() {
 // LES FLOW — GLOBALE STAAT
 // ════════════════════════════════════════
 let huidigeSectie    = 0;
-let huidigeVraag     = 0;       // vraagindex binnen huidige sectie
-let inVraagModus     = false;   // true = vraag zichtbaar, false = tekst zichtbaar
+let huidigeVraag     = 0;
+let inVraagModus     = false;
 let sessieAntwoorden = [];
-let vraagResultaten  = {};      // vraagId → 'goed' | 'fout'
+let vraagResultaten  = {};
 
 // ── Shields balk renderen ──
 function renderShields() {
@@ -1030,7 +1064,6 @@ function updateVoortgangsbalk() {
   document.getElementById('les-voortgang-balk').style.width = pct + '%';
 }
 
-// ── Vult sectietekst en tijdlijn in (zonder weergave te wisselen) ──
 function vulSectieInhoud(si) {
   const sectie = lesData.secties[si];
 
@@ -1061,7 +1094,6 @@ async function startLes() {
   voortgangBalk.classList.add('zichtbaar');
   document.getElementById('les-scherm').classList.add('zichtbaar');
 
-  // Shields balk activeren
   document.getElementById('shields-balk').style.display = 'flex';
 
   sessieAntwoorden = [];
@@ -1069,9 +1101,7 @@ async function startLes() {
 
   const opgeslagen = await haalVoortgang();
 
-  // Herstel ALLEEN als de voortgang er is én niet voltooid is
   if (opgeslagen && !opgeslagen.voltooid && opgeslagen.sectieIndex != null) {
-    // Herstel vraagResultaten VOORDAT we iets doen dat opslaat
     vraagResultaten = opgeslagen.vraagResultaten || {};
     huidigeSectie = opgeslagen.sectieIndex;
     vulSectieInhoud(huidigeSectie);
@@ -1082,7 +1112,6 @@ async function startLes() {
       toonSectie(huidigeSectie);
     }
   } else {
-    // Nieuwe les, start bij sectie 0
     vraagResultaten = {};
     huidigeSectie = 0;
     toonSectie(0);
@@ -1103,13 +1132,12 @@ function toonSectie(index) {
     inVragen:    false,
     voltooid:    false,
     titel:       artikelTitel,
-    vraagResultaten: vraagResultaten   // opslaan!
+    vraagResultaten: vraagResultaten
   });
 
   const sectie = lesData.secties[index];
   const totaal = lesData.secties.length;
 
-  // Header
   document.getElementById('sectie-label-tekst').textContent  = artikelTitel;
   document.getElementById('sectie-titel').textContent        = sectie.titel;
   document.getElementById('sectie-nummer-tekst').textContent = `Pagina ${index + 1} van ${totaal}`;
@@ -1117,10 +1145,10 @@ function toonSectie(index) {
   const dot = document.getElementById('sectie-label-dot');
   if (huidigeCategorieKleur) dot.style.background = huidigeCategorieKleur;
 
-  // Inhoud
+  updateReaderCatBadge();
+
   vulSectieInhoud(index);
 
-  // Weergave
   document.getElementById('sectie-tekst').style.display       = 'block';
   const tijdlijnWrap = document.getElementById('tijdlijn-wrap');
   tijdlijnWrap.style.display = (sectie.tijdlijn && sectie.tijdlijn.length > 0) ? 'block' : 'none';
@@ -1147,33 +1175,30 @@ function toonVraag(vi) {
   const isLaatste   = vi === aantalInSec - 1;
   const isLaatsteSec = huidigeSectie === lesData.secties.length - 1;
 
-  // Save progress
   slaVoortgangOp({
     sectieIndex: huidigeSectie,
     vraagIndex:  vi,
     inVragen:    true,
     voltooid:    false,
     titel:       artikelTitel,
-    vraagResultaten: vraagResultaten   // opslaan!
+    vraagResultaten: vraagResultaten
   });
 
-  // Header
   document.getElementById('sectie-label-tekst').textContent  = artikelTitel;
   document.getElementById('sectie-titel').textContent        = sectie.titel;
   document.getElementById('sectie-nummer-tekst').textContent = `Vraag ${vi + 1} van ${aantalInSec}`;
 
-  // Tekst verbergen, vraag tonen
+  updateReaderCatBadge();
+
   document.getElementById('sectie-tekst').style.display          = 'none';
   document.getElementById('tijdlijn-wrap').style.display          = 'none';
   document.getElementById('knop-gelezen-wrap').style.display      = 'none';
   document.getElementById('terug-naar-vraag-balk').style.display  = 'none';
   document.getElementById('vragen-sectie').style.display          = 'block';
 
-  // Hulpknoppen tonen
   document.getElementById('knop-weetniets').style.display = 'inline-flex';
   document.getElementById('knop-kijkop').style.display   = 'inline-flex';
 
-  // Volgende knop
   const knopVolgende = document.getElementById('knop-volgende');
   knopVolgende.disabled = true;
   if (isLaatste && isLaatsteSec) {
@@ -1191,7 +1216,6 @@ function toonVraag(vi) {
     }
   };
 
-  // Vraag renderen
   const inhoud = document.getElementById('vragen-inhoud');
   inhoud.innerHTML = '';
 
@@ -1221,12 +1245,10 @@ function toonVraag(vi) {
       goed
     });
 
-    // Hulpknoppen verbergen, volgende inschakelen
     document.getElementById('knop-weetniets').style.display = 'none';
     document.getElementById('knop-kijkop').style.display   = 'none';
     knopVolgende.disabled = false;
 
-    // Opslaan na elke beantwoording
     slaVoortgangOp({
       sectieIndex: huidigeSectie,
       vraagIndex:  vi,
@@ -1238,7 +1260,6 @@ function toonVraag(vi) {
 
     renderShields();
 
-    // Scroll lichtjes naar beneden zodat feedback zichtbaar is
     setTimeout(() => {
       const fb = blok.querySelector('.feedback');
       if (fb) fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1315,22 +1336,21 @@ function toonVraag(vi) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ── "Kijk op in tekst" — terug naar de tekst ──
+// ── "Kijk op in tekst" ──
 function toonTekstLookup() {
   inVraagModus = false;
 
   const sectie = lesData.secties[huidigeSectie];
 
-  // Header bijwerken: behoud artikelnaam, toon sectietitel en hint
   document.getElementById('sectie-titel').textContent        = sectie.titel;
   document.getElementById('sectie-nummer-tekst').textContent = 'Kijk op in de tekst';
 
-  // Tekst tonen
+  updateReaderCatBadge();
+
   document.getElementById('sectie-tekst').style.display = 'block';
   const tijdlijnWrap = document.getElementById('tijdlijn-wrap');
   tijdlijnWrap.style.display = (sectie.tijdlijn && sectie.tijdlijn.length > 0) ? 'block' : 'none';
 
-  // Vraag verbergen, terugknop tonen
   document.getElementById('vragen-sectie').style.display         = 'none';
   document.getElementById('terug-naar-vraag-balk').style.display = 'block';
 
@@ -1345,10 +1365,11 @@ function terugNaarVraag() {
   const sectie = lesData.secties[huidigeSectie];
   const aantalInSec = sectie.vragen.length;
 
-  // Header herstellen
   document.getElementById('sectie-label-tekst').textContent  = artikelTitel;
   document.getElementById('sectie-titel').textContent        = sectie.titel;
   document.getElementById('sectie-nummer-tekst').textContent = `Vraag ${huidigeVraag + 1} van ${aantalInSec}`;
+
+  updateReaderCatBadge();
 
   document.getElementById('sectie-tekst').style.display          = 'none';
   document.getElementById('tijdlijn-wrap').style.display          = 'none';
@@ -1359,7 +1380,7 @@ function terugNaarVraag() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ── "Weet niet" — huidige vraag als fout markeren ──
+// ── "Weet niet" ──
 function markeerHuidigeVraagFout() {
   const sectie  = lesData.secties[huidigeSectie];
   const vraag   = sectie.vragen[huidigeVraag];
@@ -1409,7 +1430,6 @@ function markeerHuidigeVraagFout() {
   document.getElementById('knop-kijkop').style.display   = 'none';
   document.getElementById('knop-volgende').disabled       = false;
 
-  // Opslaan na "weet niet"
   slaVoortgangOp({
     sectieIndex: huidigeSectie,
     vraagIndex:  huidigeVraag,
@@ -1496,6 +1516,8 @@ function toonHerhalingsRonde() {
   document.getElementById('sectie-titel').textContent        = 'Nog niet helemaal...';
   document.getElementById('sectie-nummer-tekst').textContent =
     `${herhalingsWachtrij.length} vraag${herhalingsWachtrij.length !== 1 ? 'en' : ''} opnieuw`;
+
+  updateReaderCatBadge();
 
   const tekstEl = document.getElementById('sectie-tekst');
   tekstEl.innerHTML = '';
