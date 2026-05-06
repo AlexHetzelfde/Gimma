@@ -218,7 +218,7 @@ header {
   width: 15px;
   height: 19px;
   clip-path: polygon(50% 100%, 0% 68%, 0% 0%, 100% 0%, 100% 68%);
-  background: var(--les-kleur);   /* <-- categorie-kleur als standaard */
+  background: var(--les-kleur);
   transition: background 0.3s, transform 0.25s;
   flex-shrink: 0;
   cursor: default;
@@ -434,6 +434,35 @@ header {
   letter-spacing: 0.03em;
 }
 
+/* ---------- CATEGORIE OVERZICHT (homescreen) ---------- */
+.categorie-overzicht {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: center;
+  max-width: 480px;
+}
+
+.cat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  padding: 0.22rem 0.65rem;
+  border-radius: 20px;
+  border: 1px solid;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.cat-chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 /* ---------- STATUS / LAADBALK ---------- */
 #status-wrap {
   display: none;
@@ -641,7 +670,16 @@ header {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.reader-cat-badge {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  transition: color 0.4s ease;
 }
 
 .reader-sectie-naam {
@@ -756,7 +794,7 @@ header {
   transform: translateY(-1px);
 }
 
-/* ---------- VRAGEN SECTIE (één per keer) ---------- */
+/* ---------- VRAGEN SECTIE ---------- */
 #vragen-sectie {
   padding: 0 0 1rem;
 }
@@ -809,7 +847,7 @@ header {
 .optie-knop:hover:not(:disabled) {
   transform: translateY(-1px);
   opacity: 0.92;
-  background: #d9d9d9 !important;   /* donkerder grijs voor duidelijke hover */
+  background: #d9d9d9 !important;
 }
 
 .optie-knop:active:not(:disabled) {
