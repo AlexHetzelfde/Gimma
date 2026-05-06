@@ -6,7 +6,7 @@ const LS_SR           = 'wikileer_sr';
 const LS_LAST_SESSION = 'wikileer_last_session';
 const LS_LAYOUT       = 'wikileer_layout';
 const LS_CATS         = 'wikileer_categories';
-const MAX_TEKST       = 40000; // verhoogd van 6000
+const MAX_TEKST       = 40000;
 
 const INTERVALS = [1, 2, 4, 7, 14, 30];
 
@@ -17,7 +17,7 @@ const DB_NAAM   = 'wikileer_db';
 const DB_VERSIE = 1;
 const STORE_KV  = 'kv';
 let db = null;
-const _memFallback = {}; // in-memory fallback als IndexedDB niet beschikbaar is
+const _memFallback = {};
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -30,8 +30,6 @@ function openDB() {
   });
 }
 
-// FIX: alle db-functies checken nu eerst of db beschikbaar is,
-// en vallen anders terug op _memFallback — consistent gedrag overal
 function dbGet(sleutel) {
   if (!db) return Promise.resolve(_memFallback[sleutel] ?? null);
   return new Promise((resolve, reject) => {
@@ -304,7 +302,6 @@ function getMaxStep(strength) {
 }
 
 async function lastSessionToday() {
-  // FIX: gebruikt nu consistent dbGet (werkt ook met de in-memory fallback)
   const val = await dbGet(LS_LAST_SESSION);
   return val === new Date().toISOString().slice(0, 10);
 }
@@ -403,6 +400,45 @@ document.getElementById('header-datum').textContent =
   new Date().toLocaleDateString('nl-NL', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
+
+// ════════════════════════════════════════
+// LOGO KLIKKEN — terug naar home
+// ════════════════════════════════════════
+function logoKlikken() {
+  const inLes   = document.getElementById('les-scherm').classList.contains('zichtbaar');
+  const inKlaar = document.getElementById('klaar-scherm').classList.contains('zichtbaar');
+  if (inLes || inKlaar) {
+    toonTerugNaarHomeModal();
+  }
+}
+
+function toonTerugNaarHomeModal() {
+  document.getElementById('terug-home-modal').classList.add('zichtbaar');
+}
+
+function sluitTerugNaarHomeModal() {
+  document.getElementById('terug-home-modal').classList.remove('zichtbaar');
+}
+
+async function bevestigTerugNaarHome() {
+  sluitTerugNaarHomeModal();
+
+  // Verberg les/klaar scherm
+  document.getElementById('les-scherm').classList.remove('zichtbaar');
+  document.getElementById('klaar-scherm').classList.remove('zichtbaar');
+  document.getElementById('shields-balk').style.display = 'none';
+  document.getElementById('les-voortgang').classList.remove('zichtbaar');
+  document.getElementById('les-voortgang').classList.remove('vervaag');
+  document.getElementById('les-voortgang-balk').style.width = '0%';
+
+  // Reset les-staat
+  lesData      = null;
+  inVraagModus = false;
+
+  // Terug naar homescreen
+  await toonHomescreen();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
 // ════════════════════════════════════════
 // INIT
@@ -545,8 +581,9 @@ function toonSRReview(dueItems) {
 
     const itemKleur = item.categorieKleur || '#c8a96e';
     const itemRgb   = hexNaarRgb(itemKleur);
-    blok.style.background   = `rgba(${itemRgb}, 0.05)`;
-    blok.style.border       = `1px solid rgba(${itemRgb}, 0.18)`;
+    // Verhoogde opaciteit voor zichtbaarheid op lichte achtergrond
+    blok.style.background   = `rgba(${itemRgb}, 0.08)`;
+    blok.style.border       = `1px solid rgba(${itemRgb}, 0.25)`;
     blok.style.borderRadius = '8px';
     blok.style.padding      = '1.1rem 1.2rem';
     blok.style.marginBottom = '1.5rem';
@@ -581,7 +618,6 @@ function toonSRReview(dueItems) {
       blok.querySelectorAll('.optie-knop').forEach(knop => {
         knop.addEventListener('click', function () {
           if (state[hi].beantwoord) return;
-          // FIX: trim() bij vergelijking zodat spatie-verschillen niet mislukken
           const gekozen = item.opties[parseInt(this.dataset.oi)];
           const goed    = gekozen.trim() === item.goed.trim();
 
@@ -800,10 +836,8 @@ function toonFout(bericht) {
 }
 
 // ════════════════════════════════════════
-// WIKIPEDIA
+// WIKIPEDIA — ARTIKEL OPHALEN
 // ════════════════════════════════════════
-
-// FIX: fallback via de Wikipedia API als de uitgelichte-artikelen-selector mislukt
 async function haalUitgelichtArtikel() {
   try {
     const res = await fetch('https://nl.wikipedia.org/w/api.php?action=parse&page=Hoofdpagina&prop=text&format=json&origin=*');
@@ -830,7 +864,6 @@ async function haalUitgelichtArtikel() {
     console.warn('Hoofdpagina-scraping mislukt, val terug op willekeurig artikel:', e);
   }
 
-  // FIX: fallback — haal een willekeurig artikel op via de Wikipedia API
   const fallbackRes = await fetch(
     'https://nl.wikipedia.org/w/api.php?action=query&list=random&rnnamespace=0&rnlimit=1&format=json&origin=*'
   );
@@ -849,6 +882,74 @@ async function haalVolledigeTekst(titel) {
   const page = Object.values(data.query.pages)[0];
   if (!page || page.missing) throw new Error(`Artikel "${titel}" niet gevonden`);
   return { titel: page.title, tekst: page.extract };
+}
+
+// ════════════════════════════════════════
+// WIKIPEDIA — AFBEELDINGEN OPHALEN
+// ════════════════════════════════════════
+async function haalAfbeeldingen(titel) {
+  try {
+    // Stap 1: alle afbeeldingsnamen ophalen van het artikel
+    const res = await fetch(
+      `https://nl.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titel)}&prop=images&imlimit=30&format=json&origin=*`
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    const page = Object.values(data.query.pages)[0];
+    if (!page || !page.images) return [];
+
+    // Filter: alleen echte foto's, geen iconen/vlaggen/logo's
+    const bestandsnamen = page.images
+      .map(img => img.title)
+      .filter(t => {
+        const l = t.toLowerCase();
+        return (l.endsWith('.jpg') || l.endsWith('.jpeg') || l.endsWith('.png')) &&
+          !l.includes('icon') && !l.includes('logo') && !l.includes('flag') &&
+          !l.includes('commons') && !l.includes('wikimedia') && !l.includes('edit-') &&
+          !l.includes('button') && !l.includes('arrow') && !l.includes('question') &&
+          !l.includes('stub') && !l.includes('portal') && !l.includes('disambig');
+      })
+      .slice(0, 12);
+
+    if (bestandsnamen.length === 0) return [];
+
+    // Stap 2: URL + metadata ophalen per afbeelding
+    const titelsParam = bestandsnamen.join('|');
+    const infoRes = await fetch(
+      `https://nl.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titelsParam)}&prop=imageinfo&iiprop=url|size|extmetadata&iiurlwidth=720&format=json&origin=*`
+    );
+    if (!infoRes.ok) return [];
+    const infoData = await infoRes.json();
+
+    const resultaat = [];
+    for (const p of Object.values(infoData.query.pages)) {
+      if (!p.imageinfo?.[0]) continue;
+      const info = p.imageinfo[0];
+
+      // Filter te kleine afbeeldingen (iconen)
+      if ((info.width || 0) < 250 || (info.height || 0) < 180) continue;
+
+      const meta = info.extmetadata || {};
+      const beschrijving = (
+        meta.ImageDescription?.value?.replace(/<[^>]*>/g, '').trim() ||
+        meta.ObjectName?.value ||
+        p.title.replace('File:', '').replace(/_/g, ' ').replace(/\.[^.]+$/, '')
+      ).slice(0, 400);
+
+      resultaat.push({
+        naam: p.title.replace('File:', ''),
+        url:  info.thumburl || info.url,
+        beschrijving,
+        breedte: info.width,
+        hoogte:  info.height
+      });
+    }
+
+    return resultaat;
+  } catch (e) {
+    console.warn('Afbeeldingen ophalen mislukt:', e);
+    return [];
+  }
 }
 
 // ════════════════════════════════════════
@@ -880,7 +981,6 @@ async function geminiCall(key, prompt) {
   const ruwe = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!ruwe) throw new Error('Gemini gaf geen antwoord terug');
 
-  // JSON opschonen en parsen
   let schoon = ruwe.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
   const eersteAccolade  = schoon.indexOf('{');
   const laatsteAccolade = schoon.lastIndexOf('}');
@@ -897,10 +997,18 @@ async function geminiCall(key, prompt) {
   }
 }
 
-// CALL 1 — herschrijf de tekst en bepaal de structuur + categorie
+// CALL 1 — herschrijf de tekst, bepaal structuur + categorie + afbeeldingen
 async function verwerkTekstMetGemini(titel, tekst) {
   const key  = await haalKey();
   const cats = await haalCategorieën();
+
+  // Afbeeldingen ophalen van Wikipedia
+  let afbeeldingen = [];
+  try {
+    afbeeldingen = await haalAfbeeldingen(titel);
+  } catch (e) {
+    console.warn('Afbeeldingen ophalen mislukt, ga door zonder:', e);
+  }
 
   const ingekorte = tekst.length > MAX_TEKST
     ? tekst.slice(0, MAX_TEKST) + '\n\n[tekst ingekort vanwege lengte]'
@@ -912,6 +1020,11 @@ async function verwerkTekstMetGemini(titel, tekst) {
 
   const bestaandeKleuren = cats.map(c => c.kleur).join(', ') || 'geen';
 
+  // Afbeeldingenlijst voor de prompt
+  const afbeeldingenTekst = afbeeldingen.length > 0
+    ? `BESCHIKBARE AFBEELDINGEN UIT DIT ARTIKEL:\n${afbeeldingen.map(a => `• "${a.naam}": ${a.beschrijving}`).join('\n')}\n\nAFBEELDING REGELS:\n- Voeg per sectie MAXIMAAL ÉÉN afbeelding toe\n- ALLEEN als de sectietekst een visueel concept uitlegt waarbij een foto begripsvorming significant verbetert\n- Denk aan: architectonische onderdelen, anatomie, geografische structuren, historische objecten, technische schema's, biologische soorten, kunstwerken, kaarten\n- NIET gebruiken voor: portretten, algemene sfeerbeelden, niet-visuele concepten (politiek, filosofie, etc.)\n- De waarde van "afbeelding" moet EXACT een bestandsnaam uit de lijst hierboven zijn\n- Als geen afbeelding passend is: gebruik null`
+    : 'Er zijn geen geschikte afbeeldingen beschikbaar voor dit artikel. Gebruik altijd null voor het afbeelding-veld.';
+
   const prompt = `Je bent een professionele schrijver die Wikipedia-artikelen omzet naar heldere, boeiende lessen.
 
 Je krijgt het Wikipedia-artikel: "${titel}"
@@ -922,6 +1035,7 @@ JOUW TAAK:
 3. Schrijf echte alinea's, geen droge opsommingen of bullet points
 4. Voeg een tijdlijn toe ALLEEN als het artikel duidelijke historische data/gebeurtenissen bevat. Laat het tijdlijn-veld anders volledig weg.
 5. Bepaal de categorie en bijbehorende kleur (zie regels hieronder)
+6. Kies per sectie eventueel een afbeelding (zie afbeeldingsregels hieronder)
 
 CATEGORIE & KLEUR:
 ${catsTekst}
@@ -934,6 +1048,8 @@ Regels voor nieuwe categorieën:
 - Duidelijk anders dan bestaande kleuren: ${bestaandeKleuren}
 - Goede kleurvoorbeelden: #7cb9e8, #e07b6a, #82d4b0, #c9a0dc, #f4c56a, #6fbad4, #e8926a
 
+${afbeeldingenTekst}
+
 GEEF JE ANTWOORD UITSLUITEND ALS GELDIGE JSON — geen uitleg, geen markdown, geen backticks.
 
 {
@@ -943,6 +1059,7 @@ GEEF JE ANTWOORD UITSLUITEND ALS GELDIGE JSON — geen uitleg, geen markdown, ge
     {
       "titel": "Titel van de sectie",
       "tekst": "De herschreven leesbare tekst. Gebruik \\n\\n tussen alinea's.",
+      "afbeelding": "Exacte_bestandsnaam.jpg",
       "tijdlijn": [{"jaar": "1850", "gebeurtenis": "Wat er gebeurde"}]
     }
   ]
@@ -951,14 +1068,39 @@ GEEF JE ANTWOORD UITSLUITEND ALS GELDIGE JSON — geen uitleg, geen markdown, ge
 ARTIKEL TEKST:
 ${ingekorte}`;
 
-  return await geminiCall(key, prompt);
+  const resultaat = await geminiCall(key, prompt);
+
+  // Koppel afbeeldingsnamen terug aan URL's
+  if (resultaat.secties && afbeeldingen.length > 0) {
+    for (const sectie of resultaat.secties) {
+      if (sectie.afbeelding && sectie.afbeelding !== 'null') {
+        const naamGemini = sectie.afbeelding.toLowerCase().replace(/\.[^.]+$/, '');
+        const match = afbeeldingen.find(a => {
+          const aNaam = a.naam.toLowerCase().replace(/\.[^.]+$/, '');
+          return aNaam === naamGemini ||
+                 aNaam.includes(naamGemini) ||
+                 naamGemini.includes(aNaam);
+        });
+        if (match) {
+          sectie.afbeeldingUrl = match.url;
+        } else {
+          sectie.afbeelding    = null;
+          sectie.afbeeldingUrl = null;
+        }
+      } else {
+        sectie.afbeelding    = null;
+        sectie.afbeeldingUrl = null;
+      }
+    }
+  }
+
+  return resultaat;
 }
 
 // CALL 2 — maak vragen op basis van de herschreven lestekst
 async function maakVragenMetGemini(titel, secties) {
   const key = await haalKey();
 
-  // Stuur alleen de herschreven tekst mee, niet de ruwe Wikipedia-tekst
   const sectiesVoorVragen = secties.map((s, i) => ({
     sectie: i + 1,
     titel:  s.titel,
@@ -1021,7 +1163,7 @@ ${JSON.stringify(sectiesVoorVragen, null, 2)}`;
 
 // Combineer de twee calls tot één lesObject
 async function verwerkMetGemini(titel, tekst) {
-  // Call 1: tekst herschrijven
+  // Call 1: tekst herschrijven + afbeeldingen koppelen
   const tekstResultaat = await verwerkTekstMetGemini(titel, tekst);
 
   if (!tekstResultaat.secties || tekstResultaat.secties.length === 0) {
@@ -1032,17 +1174,16 @@ async function verwerkMetGemini(titel, tekst) {
     await registreerCategorie(tekstResultaat.categorie, tekstResultaat.categorieKleur);
   }
 
-  // Kleine pauze tussen de twee calls (niet strikt nodig, maar netjes)
   await new Promise(r => setTimeout(r, 500));
 
-  // Call 2: vragen maken op basis van herschreven tekst
+  // Call 2: vragen maken
   const vragenResultaat = await maakVragenMetGemini(titel, tekstResultaat.secties);
 
   if (!vragenResultaat.secties || vragenResultaat.secties.length === 0) {
     throw new Error('Gemini kon geen vragen genereren. Probeer het opnieuw.');
   }
 
-  // Samenvoegen: tekst + vragen per sectie
+  // Samenvoegen: tekst + vragen + afbeelding per sectie
   const secties = tekstResultaat.secties.map((sectie, i) => ({
     ...sectie,
     vragen: vragenResultaat.secties[i]?.vragen || []
@@ -1086,11 +1227,9 @@ async function maakLes() {
     const { titel, tekst } = await haalVolledigeTekst(naam);
     artikelTitel = titel;
 
-    // Call 1
-    setStatus('Gemini herschrijft het artikel...', 35, true);
+    setStatus('Artikel en afbeeldingen verwerken...', 35, true);
     startSchijnVoortgang(35, 62);
     lesData = await verwerkMetGemini(titel, tekst);
-    // (verwerkMetGemini doet intern beide calls en pauzeert ertussenin)
 
     stopSchijnVoortgang();
 
@@ -1127,6 +1266,11 @@ let huidigeVraag     = 0;
 let inVraagModus     = false;
 let sessieAntwoorden = [];
 let vraagResultaten  = {};
+
+// ── Lees-kaart tonen/verbergen ──
+function setLeesKaart(zichtbaar) {
+  document.getElementById('lees-kaart').style.display = zichtbaar ? 'block' : 'none';
+}
 
 // ── Shields balk renderen ──
 function renderShields() {
@@ -1167,16 +1311,37 @@ function updateVoortgangsbalk() {
 }
 
 function vulSectieInhoud(si) {
-  const sectie = lesData.secties[si];
-
+  const sectie  = lesData.secties[si];
   const tekstEl = document.getElementById('sectie-tekst');
   tekstEl.innerHTML = '';
+
+  // Afbeelding tonen als Gemini er één heeft gekoppeld
+  if (sectie.afbeelding && sectie.afbeeldingUrl) {
+    const imgWrap = document.createElement('div');
+    imgWrap.className = 'sectie-afbeelding';
+    const caption = sectie.afbeelding
+      .replace(/\.[^.]+$/, '')
+      .replace(/_/g, ' ');
+    imgWrap.innerHTML = `
+      <img
+        src="${sectie.afbeeldingUrl}"
+        alt="${caption}"
+        loading="lazy"
+        onerror="this.closest('.sectie-afbeelding').style.display='none'"
+      />
+      <div class="sectie-afbeelding-caption">${caption}</div>
+    `;
+    tekstEl.appendChild(imgWrap);
+  }
+
+  // Tekstalinea's
   sectie.tekst.split(/\n\n+/).filter(a => a.trim()).forEach(a => {
     const p = document.createElement('p');
     p.textContent = a.trim();
     tekstEl.appendChild(p);
   });
 
+  // Tijdlijn
   const tijdlijnInhoud = document.getElementById('tijdlijn-inhoud');
   tijdlijnInhoud.innerHTML = sectie.tijdlijn && sectie.tijdlijn.length > 0
     ? sectie.tijdlijn.map(t =>
@@ -1195,7 +1360,6 @@ async function startLes() {
   voortgangBalk.classList.remove('vervaag');
   voortgangBalk.classList.add('zichtbaar');
   document.getElementById('les-scherm').classList.add('zichtbaar');
-
   document.getElementById('shields-balk').style.display = 'flex';
 
   sessieAntwoorden = [];
@@ -1244,7 +1408,6 @@ function toonSectie(index) {
   document.getElementById('sectie-titel').textContent        = sectie.titel;
   document.getElementById('sectie-nummer-tekst').textContent = `Pagina ${index + 1} van ${totaal}`;
 
-  // FIX: dot werd nooit zichtbaar gemaakt — display is nu correct ingesteld
   const dot = document.getElementById('sectie-label-dot');
   if (huidigeCategorieKleur) {
     dot.style.background = huidigeCategorieKleur;
@@ -1254,17 +1417,19 @@ function toonSectie(index) {
   }
 
   updateReaderCatBadge();
-
   vulSectieInhoud(index);
 
-  document.getElementById('sectie-tekst').style.display       = 'block';
+  // Lees-kaart tonen
+  setLeesKaart(true);
+  document.getElementById('sectie-tekst').style.display = 'block';
+
   const tijdlijnWrap = document.getElementById('tijdlijn-wrap');
   tijdlijnWrap.style.display = (sectie.tijdlijn && sectie.tijdlijn.length > 0) ? 'block' : 'none';
 
-  document.getElementById('knop-gelezen-wrap').style.display  = 'block';
-  document.getElementById('vragen-sectie').style.display      = 'none';
-  document.getElementById('terug-naar-vraag-balk').style.display = 'none';
-  document.getElementById('knop-volgende').disabled           = true;
+  document.getElementById('knop-gelezen-wrap').style.display      = 'block';
+  document.getElementById('vragen-sectie').style.display           = 'none';
+  document.getElementById('terug-naar-vraag-balk').style.display   = 'none';
+  document.getElementById('knop-volgende').disabled                = true;
 
   renderShields();
 }
@@ -1298,9 +1463,8 @@ function toonVraag(vi) {
 
   updateReaderCatBadge();
 
-  document.getElementById('sectie-tekst').style.display          = 'none';
-  document.getElementById('tijdlijn-wrap').style.display          = 'none';
-  document.getElementById('knop-gelezen-wrap').style.display      = 'none';
+  // Lees-kaart verbergen, vragen tonen
+  setLeesKaart(false);
   document.getElementById('terug-naar-vraag-balk').style.display  = 'none';
   document.getElementById('vragen-sectie').style.display          = 'block';
 
@@ -1387,7 +1551,6 @@ function toonVraag(vi) {
     blok.querySelectorAll('.optie-knop').forEach(knop => {
       knop.addEventListener('click', function () {
         if (beantwoord) return;
-        // FIX: trim() bij vergelijking voor robuustheid
         const gekozen = vraag.opties[parseInt(this.dataset.oi)];
         const goed    = gekozen.trim() === vraag.goed.trim();
 
@@ -1456,7 +1619,10 @@ function toonTekstLookup() {
 
   updateReaderCatBadge();
 
+  // Lees-kaart tonen met tekst
+  setLeesKaart(true);
   document.getElementById('sectie-tekst').style.display = 'block';
+
   const tijdlijnWrap = document.getElementById('tijdlijn-wrap');
   tijdlijnWrap.style.display = (sectie.tijdlijn && sectie.tijdlijn.length > 0) ? 'block' : 'none';
 
@@ -1480,8 +1646,8 @@ function terugNaarVraag() {
 
   updateReaderCatBadge();
 
-  document.getElementById('sectie-tekst').style.display          = 'none';
-  document.getElementById('tijdlijn-wrap').style.display          = 'none';
+  // Lees-kaart verbergen, vragen tonen
+  setLeesKaart(false);
   document.getElementById('terug-naar-vraag-balk').style.display  = 'none';
   document.getElementById('vragen-sectie').style.display          = 'block';
 
@@ -1499,7 +1665,6 @@ function markeerHuidigeVraagFout() {
     const opties = document.querySelectorAll('#opties-0 .optie-knop');
     opties.forEach(k => {
       k.disabled = true;
-      // FIX: trim() voor consistente vergelijking
       if (k.textContent.trim() === vraag.goed.trim()) k.classList.add('goed');
     });
     const fb = document.getElementById('feedback-0');
@@ -1629,10 +1794,12 @@ function toonHerhalingsRonde() {
 
   updateReaderCatBadge();
 
+  // Lees-kaart tonen met uitlegparagraaf
+  setLeesKaart(true);
   const tekstEl = document.getElementById('sectie-tekst');
   tekstEl.innerHTML = '';
   const uitleg = document.createElement('p');
-  uitleg.style.color = 'var(--muted)';
+  uitleg.style.color = 'rgba(232,227,219,0.65)';
   uitleg.textContent = 'De vragen die je net fout had komen hieronder terug. Ga door totdat alles goed is.';
   tekstEl.appendChild(uitleg);
   tekstEl.style.display = 'block';
@@ -1691,7 +1858,6 @@ function toonHerhalingsRonde() {
       blok.querySelectorAll('.optie-knop').forEach(knop => {
         knop.addEventListener('click', function () {
           if (rondeResultaten[hi].beantwoord) return;
-          // FIX: trim() bij vergelijking
           const gekozen = vraag.opties[parseInt(this.dataset.oi)];
           const goed    = gekozen.trim() === vraag.goed.trim();
 
@@ -1788,7 +1954,6 @@ function toonKlaarScherm() {
   } catch (e) {
     console.warn('IndexedDB niet beschikbaar, gebruik in-memory opslag:', e);
     db = null;
-    // db = null triggert automatisch de _memFallback in dbGet/dbSet/etc.
   }
   herstelLayout();
   await init();
