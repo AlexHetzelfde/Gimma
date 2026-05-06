@@ -423,7 +423,6 @@ function sluitTerugNaarHomeModal() {
 async function bevestigTerugNaarHome() {
   sluitTerugNaarHomeModal();
 
-  // Verberg les/klaar scherm
   document.getElementById('les-scherm').classList.remove('zichtbaar');
   document.getElementById('klaar-scherm').classList.remove('zichtbaar');
   document.getElementById('shields-balk').style.display = 'none';
@@ -431,11 +430,9 @@ async function bevestigTerugNaarHome() {
   document.getElementById('les-voortgang').classList.remove('vervaag');
   document.getElementById('les-voortgang-balk').style.width = '0%';
 
-  // Reset les-staat
   lesData      = null;
   inVraagModus = false;
 
-  // Terug naar homescreen
   await toonHomescreen();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -545,52 +542,75 @@ function updateReaderCatBadge() {
 }
 
 // ════════════════════════════════════════
-// SR REVIEW
+// SR REVIEW — één vraag per keer
 // ════════════════════════════════════════
 function toonSRReview(dueItems) {
   const wrap = document.getElementById('sr-review-wrap');
   wrap.style.display = 'block';
 
-  document.getElementById('sr-review-sub').textContent =
-    `${dueItems.length} vraag${dueItems.length !== 1 ? 'en' : ''} te herhalen`;
+  const totaal = dueItems.length;
+  let huidigeIndex = 0;
+  const srResultaten = []; // { goed: bool } per item
+
+  // Update de sub-titel met voortgang
+  function updateSubTitel() {
+    document.getElementById('sr-review-sub').textContent =
+      `Vraag ${huidigeIndex + 1} van ${totaal}`;
+  }
+
+  updateSubTitel();
 
   const inhoud = document.getElementById('sr-vragen-inhoud');
   inhoud.innerHTML = '';
 
-  const state = dueItems.map(() => ({ beantwoord: false, goed: false }));
+  // Toon eindresultaat
+  function toonSREinde() {
+    inhoud.innerHTML = '';
+    const goedAantal = srResultaten.filter(r => r.goed).length;
+    const pct        = Math.round((goedAantal / totaal) * 100);
 
-  function checkAllesSR() {
-    if (!state.every(s => s.beantwoord)) return;
+    document.getElementById('sr-review-sub').textContent = 'Klaar!';
 
-    const goedAantal = state.filter(s => s.goed).length;
-    const pct        = Math.round((goedAantal / dueItems.length) * 100);
-    const scoreEl    = document.getElementById('sr-score-tekst');
+    const scoreEl = document.getElementById('sr-score-tekst');
     scoreEl.innerHTML =
-      `<strong>${goedAantal} van ${dueItems.length}</strong> goed (${pct}%)` +
-      (goedAantal < dueItems.length
+      `<strong>${goedAantal} van ${totaal}</strong> goed (${pct}%)` +
+      (goedAantal < totaal
         ? ` — foute vragen komen morgen terug`
         : ` — alles onthouden! 🎉`);
 
-    document.getElementById('sr-klaar-balk').style.display = 'flex';
-    window.scrollTo({ top: document.getElementById('sr-klaar-balk').offsetTop - 40, behavior: 'smooth' });
+    const klaarBalk = document.getElementById('sr-klaar-balk');
+    klaarBalk.style.display = 'flex';
+    window.scrollTo({ top: wrap.offsetTop - 40, behavior: 'smooth' });
   }
 
-  dueItems.forEach((item, hi) => {
-    const blok = document.createElement('div');
-    blok.className = 'vraag-blok';
+  // Render één vraag op index
+  function toonSRVraag(index) {
+    if (index >= totaal) {
+      toonSREinde();
+      return;
+    }
 
+    huidigeIndex = index;
+    updateSubTitel();
+
+    inhoud.innerHTML = '';
+    window.scrollTo({ top: wrap.offsetTop - 40, behavior: 'smooth' });
+
+    const item      = dueItems[index];
     const itemKleur = item.categorieKleur || '#c8a96e';
     const itemRgb   = hexNaarRgb(itemKleur);
-    // Verhoogde opaciteit voor zichtbaarheid op lichte achtergrond
+
+    const blok = document.createElement('div');
+    blok.className = 'vraag-blok';
     blok.style.background   = `rgba(${itemRgb}, 0.08)`;
     blok.style.border       = `1px solid rgba(${itemRgb}, 0.25)`;
     blok.style.borderRadius = '8px';
     blok.style.padding      = '1.1rem 1.2rem';
-    blok.style.marginBottom = '1.5rem';
+    blok.style.marginBottom = '0';
 
-    const strength  = item.strength ?? 20;
-    const kleur     = sterktekleur(strength);
-    const catTagHtml = item.categorieNaam
+    const strength     = item.strength ?? 20;
+    const kleur        = sterktekleur(strength);
+    const catTagHtml   = item.categorieNaam
       ? `<span class="sr-cat-tag" style="background:rgba(${itemRgb},0.15);color:${itemKleur}">● ${item.categorieNaam}</span>`
       : '';
 
@@ -604,20 +624,67 @@ function toonSRReview(dueItems) {
         ${catTagHtml}
       </div>`;
 
+    // Knop voor volgende vraag — verschijnt na antwoord
+    function maakVolgendeKnop(goed) {
+      const knopWrap = document.createElement('div');
+      knopWrap.style.marginTop = '1rem';
+
+      const isLaatste = index === totaal - 1;
+      const knop = document.createElement('button');
+      knop.className   = 'knop-primair';
+      knop.style.width = '100%';
+      knop.textContent = isLaatste ? 'Bekijk resultaat →' : `Volgende →`;
+
+      knop.addEventListener('click', () => {
+        toonSRVraag(index + 1);
+      });
+
+      knopWrap.appendChild(knop);
+      blok.appendChild(knopWrap);
+    }
+
+    // Verwerk antwoord en registreer in SR
+    function verwerkAntwoord(goed) {
+      srResultaten[index] = { goed };
+
+      const voorheen = [huidigeCategorieKleur, huidigeCategorieNaam];
+      huidigeCategorieKleur = itemKleur;
+      huidigeCategorieNaam  = item.categorieNaam || '';
+
+      registreerAntwoord({
+        id:          item.id,
+        vraag:       item.vraag,
+        type:        item.type,
+        antwoordData: item.type === 'meerkeuze'
+          ? { opties: item.opties, goed: item.goed }
+          : { antwoord: item.antwoord },
+        goed
+      });
+
+      [huidigeCategorieKleur, huidigeCategorieNaam] = voorheen;
+
+      // Wacht kort zodat feedback zichtbaar is, toon dan volgende-knop
+      setTimeout(() => maakVolgendeKnop(goed), 400);
+    }
+
     if (item.type === 'meerkeuze') {
       blok.innerHTML = `
         ${sterkteMeter}
-        <div class="vraag-tekst" style="color:var(--text)">${hi + 1}. ${item.vraag}</div>
-        <div class="opties-grid" id="sr-opties-${hi}">
+        <div class="vraag-tekst" style="color:var(--text)">${item.vraag}</div>
+        <div class="opties-grid" id="sr-opties-${index}">
           ${item.opties.map((opt, oi) =>
             `<button class="optie-knop" data-oi="${oi}">${opt}</button>`
           ).join('')}
         </div>
-        <div class="feedback" id="sr-feedback-${hi}"></div>
+        <div class="feedback" id="sr-feedback-${index}"></div>
       `;
+
+      let beantwoord = false;
       blok.querySelectorAll('.optie-knop').forEach(knop => {
         knop.addEventListener('click', function () {
-          if (state[hi].beantwoord) return;
+          if (beantwoord) return;
+          beantwoord = true;
+
           const gekozen = item.opties[parseInt(this.dataset.oi)];
           const goed    = gekozen.trim() === item.goed.trim();
 
@@ -628,75 +695,62 @@ function toonSRReview(dueItems) {
           this.classList.remove('gemist');
           this.classList.add(goed ? 'goed' : 'fout');
 
-          const fb = document.getElementById(`sr-feedback-${hi}`);
+          const fb = document.getElementById(`sr-feedback-${index}`);
           fb.textContent = goed ? '✓ Correct!' : `✗ Het juiste antwoord is: ${item.goed}`;
           fb.className   = `feedback ${goed ? 'goed' : 'fout'}`;
           fb.style.color = goed ? 'var(--goed)' : 'var(--fout)';
 
-          const voorheen = [huidigeCategorieKleur, huidigeCategorieNaam];
-          huidigeCategorieKleur = itemKleur;
-          huidigeCategorieNaam  = item.categorieNaam || '';
-          registreerAntwoord({
-            id: item.id, vraag: item.vraag, type: 'meerkeuze',
-            antwoordData: { opties: item.opties, goed: item.goed }, goed
-          });
-          [huidigeCategorieKleur, huidigeCategorieNaam] = voorheen;
-
-          state[hi] = { beantwoord: true, goed };
-          checkAllesSR();
+          verwerkAntwoord(goed);
         });
       });
 
     } else {
       blok.innerHTML = `
         ${sterkteMeter}
-        <div class="vraag-tekst" style="color:var(--text)">${hi + 1}. ${item.vraag}</div>
+        <div class="vraag-tekst" style="color:var(--text)">${item.vraag}</div>
         <div class="open-invoer-wrap">
-          <input type="text" class="open-invoer" id="sr-open-${hi}" placeholder="Jouw antwoord..."/>
-          <button class="open-invoer-knop" id="sr-knop-${hi}">Controleer</button>
+          <input type="text" class="open-invoer" id="sr-open-${index}" placeholder="Jouw antwoord..."/>
+          <button class="open-invoer-knop" id="sr-knop-${index}">Controleer</button>
         </div>
-        <div class="feedback" id="sr-feedback-${hi}"></div>
+        <div class="feedback" id="sr-feedback-${index}"></div>
       `;
-      const invoerEl = blok.querySelector(`#sr-open-${hi}`);
-      const knopEl   = blok.querySelector(`#sr-knop-${hi}`);
+
+      const invoerEl = blok.querySelector(`#sr-open-${index}`);
+      const knopEl   = blok.querySelector(`#sr-knop-${index}`);
 
       invoerEl.addEventListener('focus', () => { invoerEl.style.borderColor = itemKleur; });
-      invoerEl.addEventListener('blur',  () => { if (!state[hi].beantwoord) invoerEl.style.borderColor = ''; });
+      invoerEl.addEventListener('blur',  () => { invoerEl.style.borderColor = ''; });
 
+      let beantwoord = false;
       const controleer = () => {
-        if (state[hi].beantwoord) return;
+        if (beantwoord) return;
         const invoer = invoerEl.value.trim();
         if (!invoer) return;
+        beantwoord = true;
 
         const goed = isGoedAntwoord(invoer, item.antwoord);
         invoerEl.disabled = true;
         invoerEl.classList.add(goed ? 'goed' : 'fout');
         knopEl.disabled = true;
 
-        const fb = document.getElementById(`sr-feedback-${hi}`);
+        const fb = document.getElementById(`sr-feedback-${index}`);
         fb.textContent = goed ? '✓ Correct!' : `✗ Het antwoord was: ${item.antwoord}`;
         fb.className   = `feedback ${goed ? 'goed' : 'fout'}`;
         fb.style.color = goed ? 'var(--goed)' : 'var(--fout)';
 
-        const voorheen = [huidigeCategorieKleur, huidigeCategorieNaam];
-        huidigeCategorieKleur = itemKleur;
-        huidigeCategorieNaam  = item.categorieNaam || '';
-        registreerAntwoord({
-          id: item.id, vraag: item.vraag, type: 'open',
-          antwoordData: { antwoord: item.antwoord }, goed
-        });
-        [huidigeCategorieKleur, huidigeCategorieNaam] = voorheen;
-
-        state[hi] = { beantwoord: true, goed };
-        checkAllesSR();
+        verwerkAntwoord(goed);
       };
 
       invoerEl.addEventListener('keydown', e => { if (e.key === 'Enter') controleer(); });
       knopEl.addEventListener('click', controleer);
+      setTimeout(() => invoerEl.focus(), 80);
     }
 
     inhoud.appendChild(blok);
-  });
+  }
+
+  // Start met de eerste vraag
+  toonSRVraag(0);
 }
 
 async function afrondSRReview() {
@@ -889,7 +943,6 @@ async function haalVolledigeTekst(titel) {
 // ════════════════════════════════════════
 async function haalAfbeeldingen(titel) {
   try {
-    // Stap 1: alle afbeeldingsnamen ophalen van het artikel
     const res = await fetch(
       `https://nl.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titel)}&prop=images&imlimit=30&format=json&origin=*`
     );
@@ -898,7 +951,6 @@ async function haalAfbeeldingen(titel) {
     const page = Object.values(data.query.pages)[0];
     if (!page || !page.images) return [];
 
-    // Filter: alleen echte foto's, geen iconen/vlaggen/logo's
     const bestandsnamen = page.images
       .map(img => img.title)
       .filter(t => {
@@ -913,7 +965,6 @@ async function haalAfbeeldingen(titel) {
 
     if (bestandsnamen.length === 0) return [];
 
-    // Stap 2: URL + metadata ophalen per afbeelding
     const titelsParam = bestandsnamen.join('|');
     const infoRes = await fetch(
       `https://nl.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titelsParam)}&prop=imageinfo&iiprop=url|size|extmetadata&iiurlwidth=720&format=json&origin=*`
@@ -926,7 +977,6 @@ async function haalAfbeeldingen(titel) {
       if (!p.imageinfo?.[0]) continue;
       const info = p.imageinfo[0];
 
-      // Filter te kleine afbeeldingen (iconen)
       if ((info.width || 0) < 250 || (info.height || 0) < 180) continue;
 
       const meta = info.extmetadata || {};
@@ -997,12 +1047,10 @@ async function geminiCall(key, prompt) {
   }
 }
 
-// CALL 1 — herschrijf de tekst, bepaal structuur + categorie + afbeeldingen
 async function verwerkTekstMetGemini(titel, tekst) {
   const key  = await haalKey();
   const cats = await haalCategorieën();
 
-  // Afbeeldingen ophalen van Wikipedia
   let afbeeldingen = [];
   try {
     afbeeldingen = await haalAfbeeldingen(titel);
@@ -1020,7 +1068,6 @@ async function verwerkTekstMetGemini(titel, tekst) {
 
   const bestaandeKleuren = cats.map(c => c.kleur).join(', ') || 'geen';
 
-  // Afbeeldingenlijst voor de prompt
   const afbeeldingenTekst = afbeeldingen.length > 0
     ? `BESCHIKBARE AFBEELDINGEN UIT DIT ARTIKEL:\n${afbeeldingen.map(a => `• "${a.naam}": ${a.beschrijving}`).join('\n')}\n\nAFBEELDING REGELS:\n- Voeg per sectie MAXIMAAL ÉÉN afbeelding toe\n- ALLEEN als de sectietekst een visueel concept uitlegt waarbij een foto begripsvorming significant verbetert\n- Denk aan: architectonische onderdelen, anatomie, geografische structuren, historische objecten, technische schema's, biologische soorten, kunstwerken, kaarten\n- NIET gebruiken voor: portretten, algemene sfeerbeelden, niet-visuele concepten (politiek, filosofie, etc.)\n- De waarde van "afbeelding" moet EXACT een bestandsnaam uit de lijst hierboven zijn\n- Als geen afbeelding passend is: gebruik null`
     : 'Er zijn geen geschikte afbeeldingen beschikbaar voor dit artikel. Gebruik altijd null voor het afbeelding-veld.';
@@ -1070,7 +1117,6 @@ ${ingekorte}`;
 
   const resultaat = await geminiCall(key, prompt);
 
-  // Koppel afbeeldingsnamen terug aan URL's
   if (resultaat.secties && afbeeldingen.length > 0) {
     for (const sectie of resultaat.secties) {
       if (sectie.afbeelding && sectie.afbeelding !== 'null') {
@@ -1097,7 +1143,6 @@ ${ingekorte}`;
   return resultaat;
 }
 
-// CALL 2 — maak vragen op basis van de herschreven lestekst
 async function maakVragenMetGemini(titel, secties) {
   const key = await haalKey();
 
@@ -1161,9 +1206,7 @@ ${JSON.stringify(sectiesVoorVragen, null, 2)}`;
   return await geminiCall(key, prompt);
 }
 
-// Combineer de twee calls tot één lesObject
 async function verwerkMetGemini(titel, tekst) {
-  // Call 1: tekst herschrijven + afbeeldingen koppelen
   const tekstResultaat = await verwerkTekstMetGemini(titel, tekst);
 
   if (!tekstResultaat.secties || tekstResultaat.secties.length === 0) {
@@ -1176,14 +1219,12 @@ async function verwerkMetGemini(titel, tekst) {
 
   await new Promise(r => setTimeout(r, 500));
 
-  // Call 2: vragen maken
   const vragenResultaat = await maakVragenMetGemini(titel, tekstResultaat.secties);
 
   if (!vragenResultaat.secties || vragenResultaat.secties.length === 0) {
     throw new Error('Gemini kon geen vragen genereren. Probeer het opnieuw.');
   }
 
-  // Samenvoegen: tekst + vragen + afbeelding per sectie
   const secties = tekstResultaat.secties.map((sectie, i) => ({
     ...sectie,
     vragen: vragenResultaat.secties[i]?.vragen || []
@@ -1267,12 +1308,10 @@ let inVraagModus     = false;
 let sessieAntwoorden = [];
 let vraagResultaten  = {};
 
-// ── Lees-kaart tonen/verbergen ──
 function setLeesKaart(zichtbaar) {
   document.getElementById('lees-kaart').style.display = zichtbaar ? 'block' : 'none';
 }
 
-// ── Shields balk renderen ──
 function renderShields() {
   const balk = document.getElementById('shields-balk');
   balk.innerHTML = '';
@@ -1315,7 +1354,6 @@ function vulSectieInhoud(si) {
   const tekstEl = document.getElementById('sectie-tekst');
   tekstEl.innerHTML = '';
 
-  // Afbeelding tonen als Gemini er één heeft gekoppeld
   if (sectie.afbeelding && sectie.afbeeldingUrl) {
     const imgWrap = document.createElement('div');
     imgWrap.className = 'sectie-afbeelding';
@@ -1334,14 +1372,12 @@ function vulSectieInhoud(si) {
     tekstEl.appendChild(imgWrap);
   }
 
-  // Tekstalinea's
   sectie.tekst.split(/\n\n+/).filter(a => a.trim()).forEach(a => {
     const p = document.createElement('p');
     p.textContent = a.trim();
     tekstEl.appendChild(p);
   });
 
-  // Tijdlijn
   const tijdlijnInhoud = document.getElementById('tijdlijn-inhoud');
   tijdlijnInhoud.innerHTML = sectie.tijdlijn && sectie.tijdlijn.length > 0
     ? sectie.tijdlijn.map(t =>
@@ -1384,7 +1420,6 @@ async function startLes() {
   }
 }
 
-// ── Tekst-leesmodus ──
 function toonSectie(index) {
   huidigeSectie = index;
   huidigeVraag  = 0;
@@ -1419,7 +1454,6 @@ function toonSectie(index) {
   updateReaderCatBadge();
   vulSectieInhoud(index);
 
-  // Lees-kaart tonen
   setLeesKaart(true);
   document.getElementById('sectie-tekst').style.display = 'block';
 
@@ -1434,7 +1468,6 @@ function toonSectie(index) {
   renderShields();
 }
 
-// ── Eén-vraag-per-scherm modus ──
 function toonVraag(vi) {
   huidigeVraag = vi;
   inVraagModus = true;
@@ -1463,7 +1496,6 @@ function toonVraag(vi) {
 
   updateReaderCatBadge();
 
-  // Lees-kaart verbergen, vragen tonen
   setLeesKaart(false);
   document.getElementById('terug-naar-vraag-balk').style.display  = 'none';
   document.getElementById('vragen-sectie').style.display          = 'block';
@@ -1608,7 +1640,6 @@ function toonVraag(vi) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ── "Kijk op in tekst" ──
 function toonTekstLookup() {
   inVraagModus = false;
 
@@ -1619,7 +1650,6 @@ function toonTekstLookup() {
 
   updateReaderCatBadge();
 
-  // Lees-kaart tonen met tekst
   setLeesKaart(true);
   document.getElementById('sectie-tekst').style.display = 'block';
 
@@ -1633,7 +1663,6 @@ function toonTekstLookup() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ── Terug naar de vraag ──
 function terugNaarVraag() {
   inVraagModus = true;
 
@@ -1646,7 +1675,6 @@ function terugNaarVraag() {
 
   updateReaderCatBadge();
 
-  // Lees-kaart verbergen, vragen tonen
   setLeesKaart(false);
   document.getElementById('terug-naar-vraag-balk').style.display  = 'none';
   document.getElementById('vragen-sectie').style.display          = 'block';
@@ -1655,7 +1683,6 @@ function terugNaarVraag() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ── "Weet niet" ──
 function markeerHuidigeVraagFout() {
   const sectie  = lesData.secties[huidigeSectie];
   const vraag   = sectie.vragen[huidigeVraag];
@@ -1794,7 +1821,6 @@ function toonHerhalingsRonde() {
 
   updateReaderCatBadge();
 
-  // Lees-kaart tonen met uitlegparagraaf
   setLeesKaart(true);
   const tekstEl = document.getElementById('sectie-tekst');
   tekstEl.innerHTML = '';
@@ -1914,7 +1940,6 @@ function toonHerhalingsRonde() {
   });
 }
 
-// ── Klaar scherm ──
 function toonKlaarScherm() {
   document.getElementById('les-scherm').classList.remove('zichtbaar');
   document.getElementById('shields-balk').style.display = 'none';
