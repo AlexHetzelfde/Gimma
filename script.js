@@ -6,7 +6,7 @@ const LS_SR           = 'wikileer_sr';
 const LS_LAST_SESSION = 'wikileer_last_session';
 const LS_LAYOUT       = 'wikileer_layout';
 const LS_CATS         = 'wikileer_categories';
-const MAX_TEKST       = 6000;
+const MAX_TEKST       = 40000; // verhoogd van 6000
 
 const INTERVALS = [1, 2, 4, 7, 14, 30];
 
@@ -17,6 +17,7 @@ const DB_NAAM   = 'wikileer_db';
 const DB_VERSIE = 1;
 const STORE_KV  = 'kv';
 let db = null;
+const _memFallback = {}; // in-memory fallback als IndexedDB niet beschikbaar is
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -29,7 +30,10 @@ function openDB() {
   });
 }
 
+// FIX: alle db-functies checken nu eerst of db beschikbaar is,
+// en vallen anders terug op _memFallback — consistent gedrag overal
 function dbGet(sleutel) {
+  if (!db) return Promise.resolve(_memFallback[sleutel] ?? null);
   return new Promise((resolve, reject) => {
     const tx  = db.transaction(STORE_KV, 'readonly');
     const req = tx.objectStore(STORE_KV).get(sleutel);
@@ -39,6 +43,7 @@ function dbGet(sleutel) {
 }
 
 function dbSet(sleutel, waarde) {
+  if (!db) { _memFallback[sleutel] = waarde; return Promise.resolve(); }
   return new Promise((resolve, reject) => {
     const tx  = db.transaction(STORE_KV, 'readwrite');
     const req = tx.objectStore(STORE_KV).put(waarde, sleutel);
@@ -48,6 +53,7 @@ function dbSet(sleutel, waarde) {
 }
 
 function dbDelete(sleutel) {
+  if (!db) { delete _memFallback[sleutel]; return Promise.resolve(); }
   return new Promise((resolve, reject) => {
     const tx  = db.transaction(STORE_KV, 'readwrite');
     const req = tx.objectStore(STORE_KV).delete(sleutel);
@@ -57,6 +63,7 @@ function dbDelete(sleutel) {
 }
 
 function dbGetAllKeys() {
+  if (!db) return Promise.resolve(Object.keys(_memFallback));
   return new Promise((resolve, reject) => {
     const tx  = db.transaction(STORE_KV, 'readonly');
     const req = tx.objectStore(STORE_KV).getAllKeys();
@@ -297,6 +304,7 @@ function getMaxStep(strength) {
 }
 
 async function lastSessionToday() {
+  // FIX: gebruikt nu consistent dbGet (werkt ook met de in-memory fallback)
   const val = await dbGet(LS_LAST_SESSION);
   return val === new Date().toISOString().slice(0, 10);
 }
@@ -573,12 +581,13 @@ function toonSRReview(dueItems) {
       blok.querySelectorAll('.optie-knop').forEach(knop => {
         knop.addEventListener('click', function () {
           if (state[hi].beantwoord) return;
+          // FIX: trim() bij vergelijking zodat spatie-verschillen niet mislukken
           const gekozen = item.opties[parseInt(this.dataset.oi)];
-          const goed    = gekozen === item.goed;
+          const goed    = gekozen.trim() === item.goed.trim();
 
           blok.querySelectorAll('.optie-knop').forEach(k => {
             k.disabled = true;
-            if (k.textContent === item.goed) k.classList.add('gemist');
+            if (k.textContent.trim() === item.goed.trim()) k.classList.add('gemist');
           });
           this.classList.remove('gemist');
           this.classList.add(goed ? 'goed' : 'fout');
@@ -769,7 +778,7 @@ function setStatus(tekst, voortgang, shimmer = false) {
 function startSchijnVoortgang(van, tot) {
   let huidige = van;
   schijnInterval = setInterval(() => {
-    huidige = Math.min(huidige + 0.8, tot);
+    huidige = Math.min(huidige + 0.6, tot);
     document.getElementById('laadbalk').style.width = huidige + '%';
   }, 600);
 }
@@ -793,27 +802,42 @@ function toonFout(bericht) {
 // ════════════════════════════════════════
 // WIKIPEDIA
 // ════════════════════════════════════════
+
+// FIX: fallback via de Wikipedia API als de uitgelichte-artikelen-selector mislukt
 async function haalUitgelichtArtikel() {
-  const res = await fetch('https://nl.wikipedia.org/w/api.php?action=parse&page=Hoofdpagina&prop=text&format=json&origin=*');
-  if (!res.ok) throw new Error('Kon Wikipedia hoofdpagina niet ophalen');
-  const data = await res.json();
-  const doc  = new DOMParser().parseFromString(data.parse.text['*'], 'text/html');
+  try {
+    const res = await fetch('https://nl.wikipedia.org/w/api.php?action=parse&page=Hoofdpagina&prop=text&format=json&origin=*');
+    if (!res.ok) throw new Error('Hoofdpagina niet bereikbaar');
+    const data = await res.json();
+    const doc  = new DOMParser().parseFromString(data.parse.text['*'], 'text/html');
 
-  let titel = null;
-  const uitgelichtDiv = doc.querySelector('#mp-uitgelicht');
-  if (uitgelichtDiv) {
-    const link = uitgelichtDiv.querySelector('a[href^="/wiki/"]:not([href*=":"])');
-    if (link) titel = decodeURIComponent(link.getAttribute('href').replace('/wiki/', '').replace(/_/g, ' '));
-  }
-
-  if (!titel) {
-    for (const link of doc.querySelectorAll('a[href^="/wiki/"]:not([href*=":"])')) {
-      const t = decodeURIComponent(link.getAttribute('href').replace('/wiki/', '').replace(/_/g, ' '));
-      if (t && t !== 'Hoofdpagina' && link.textContent.length > 3) { titel = t; break; }
+    let titel = null;
+    const uitgelichtDiv = doc.querySelector('#mp-uitgelicht');
+    if (uitgelichtDiv) {
+      const link = uitgelichtDiv.querySelector('a[href^="/wiki/"]:not([href*=":"])');
+      if (link) titel = decodeURIComponent(link.getAttribute('href').replace('/wiki/', '').replace(/_/g, ' '));
     }
+
+    if (!titel) {
+      for (const link of doc.querySelectorAll('a[href^="/wiki/"]:not([href*=":"])')) {
+        const t = decodeURIComponent(link.getAttribute('href').replace('/wiki/', '').replace(/_/g, ' '));
+        if (t && t !== 'Hoofdpagina' && link.textContent.length > 3) { titel = t; break; }
+      }
+    }
+
+    if (titel) return titel;
+  } catch (e) {
+    console.warn('Hoofdpagina-scraping mislukt, val terug op willekeurig artikel:', e);
   }
 
-  if (!titel) throw new Error('Kon het uitgelichte artikel niet vinden');
+  // FIX: fallback — haal een willekeurig artikel op via de Wikipedia API
+  const fallbackRes = await fetch(
+    'https://nl.wikipedia.org/w/api.php?action=query&list=random&rnnamespace=0&rnlimit=1&format=json&origin=*'
+  );
+  if (!fallbackRes.ok) throw new Error('Kon geen Wikipedia-artikel ophalen');
+  const fallbackData = await fallbackRes.json();
+  const titel = fallbackData?.query?.random?.[0]?.title;
+  if (!titel) throw new Error('Wikipedia gaf geen artikeltitel terug');
   return titel;
 }
 
@@ -828,88 +852,11 @@ async function haalVolledigeTekst(titel) {
 }
 
 // ════════════════════════════════════════
-// GEMINI
+// GEMINI — TWEE CALLS
 // ════════════════════════════════════════
-async function verwerkMetGemini(titel, tekst) {
-  const key  = await haalKey();
-  const cats = await haalCategorieën();
-  const url  = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
 
-  const ingekorte = tekst.length > MAX_TEKST
-    ? tekst.slice(0, MAX_TEKST) + '\n\n[tekst ingekort]'
-    : tekst;
-
-  const catsTekst = cats.length > 0
-    ? `Bestaande categorieën (gebruik er één als die goed past):\n${JSON.stringify(cats.map(c => ({ naam: c.naam, kleur: c.kleur })), null, 2)}`
-    : 'Er zijn nog geen bestaande categorieën — maak een nieuwe aan.';
-
-  const bestaandeKleuren = cats.map(c => c.kleur).join(', ') || 'geen';
-
-  const prompt = `Je bent een professionele schrijver en leraar die Wikipedia-artikelen omzet naar heldere, boeiende lessen.
-
-Je krijgt het Wikipedia-artikel: "${titel}"
-
-JOUW TAAK:
-1. Verwerk dit artikel tot een hapbare les in goed, helder Nederlands
-2. Bepaal zelf hoeveel secties nodig zijn (minimaal 3, maximaal 6) op basis van lengte en complexiteit
-3. Als het artikel uitgebreid linkt naar andere belangrijke concepten, mag dat concept een eigen sectie krijgen
-4. Schrijf elke sectietekst alsof je een enthousiaste maar heldere journalist bent — geen droge opsommingen, echte alinea's
-5. Voeg een tijdlijn toe ALS het artikel duidelijke historische gebeurtenissen bevat (anders laat je het tijdlijn-veld weg)
-6. Maak per sectie 2-3 vragen: een mix van meerkeuze en open vragen
-
-VRAGENREGELS:
-- Meerkeuze: altijd exact 4 opties, precies 1 goed antwoord. De waarde van "goed" moet exact overeenkomen met één van de opties
-- Open vragen: verwacht antwoord is kort (1-5 woorden), niet hoofdlettergevoelig. Als het antwoord een getal is, schrijf het als cijfer (bv. "2", niet "twee")
-- Vragen mogen gerust moeilijk zijn: toets verbanden, oorzaken, gevolgen en betekenis, niet alleen losse feiten of triviale details
-- Meerkeuze-afleidopties moeten plausibel zijn, niet makkelijk te raden door eliminatie
-- Minstens de helft van de vragen per sectie moet gaan over waarom iets zo is, waardoor iets gebeurde, wat het gevolg was, of wat het verband is tussen twee concepten
-
-FASE 0 — CATEGORIE & KLEUR (doe dit nadat je de secties hebt bepaald):
-Kijk naar de volledige les en bepaal de dominante subcategorie (kort, Nederlands, max 20 tekens).
-Voorbeelden: "Biologie", "Middeleeuwse geschiedenis", "Sterrenkunde", "Filosofie", "Architectuur", "Hedendaagse politiek", "Technologie", "Geografie", "Kunst & cultuur".
-
-${catsTekst}
-
-Regels voor categorieën:
-- Past een bestaande categorie goed? → Gebruik exact dezelfde naam en kleur.
-- Geen passende categorie? → Maak een nieuwe aan. Kies een leesbare hex-kleur die:
-  • Goed leesbaar is op een donkere achtergrond (#0f0f0f)
-  • Niet te donker is (perceived lightness > 50%)
-  • Niet bruin, zwart of wit is
-  • Duidelijk anders is dan de bestaande kleuren: ${bestaandeKleuren}
-  Goede voorbeelden: #7cb9e8, #e07b6a, #82d4b0, #c9a0dc, #f4c56a, #6fbad4, #e8926a
-
-GEEF JE ANTWOORD UITSLUITEND ALS GELDIGE JSON — geen uitleg, geen markdown, geen backticks.
-
-JSON STRUCTUUR:
-{
-  "categorie": "Naam van de categorie",
-  "categorieKleur": "#hexkleur",
-  "secties": [
-    {
-      "titel": "Titel van de sectie",
-      "tekst": "De herschreven leesbare tekst. Gebruik \\n\\n tussen alinea's.",
-      "tijdlijn": [{"jaar": "1850", "gebeurtenis": "Wat er gebeurde"}],
-      "vragen": [
-        {
-          "type": "meerkeuze",
-          "vraag": "De vraag?",
-          "opties": ["Optie A", "Optie B", "Optie C", "Optie D"],
-          "goed": "Optie A"
-        },
-        {
-          "type": "open",
-          "vraag": "De vraag?",
-          "antwoord": "kort antwoord"
-        }
-      ]
-    }
-  ]
-}
-
-ARTIKEL TEKST:
-${ingekorte}`;
-
+async function geminiCall(key, prompt) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -933,27 +880,179 @@ ${ingekorte}`;
   const ruwe = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!ruwe) throw new Error('Gemini gaf geen antwoord terug');
 
+  // JSON opschonen en parsen
   let schoon = ruwe.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
   const eersteAccolade  = schoon.indexOf('{');
   const laatsteAccolade = schoon.lastIndexOf('}');
   if (eersteAccolade !== -1 && laatsteAccolade !== -1)
     schoon = schoon.slice(eersteAccolade, laatsteAccolade + 1);
 
-  let lesObj;
   try {
-    lesObj = JSON.parse(schoon);
+    return JSON.parse(schoon);
   } catch {
     const afgekort = !ruwe.trimEnd().endsWith('}');
     if (afgekort)
       throw new Error('Gemini-antwoord werd afgekapt. Probeer het opnieuw — bij een lang artikel kan dit soms voorkomen.');
     throw new Error('Kon JSON niet verwerken. Eerste 300 tekens: ' + ruwe.slice(0, 300));
   }
+}
 
-  if (lesObj.categorie && lesObj.categorieKleur) {
-    await registreerCategorie(lesObj.categorie, lesObj.categorieKleur);
+// CALL 1 — herschrijf de tekst en bepaal de structuur + categorie
+async function verwerkTekstMetGemini(titel, tekst) {
+  const key  = await haalKey();
+  const cats = await haalCategorieën();
+
+  const ingekorte = tekst.length > MAX_TEKST
+    ? tekst.slice(0, MAX_TEKST) + '\n\n[tekst ingekort vanwege lengte]'
+    : tekst;
+
+  const catsTekst = cats.length > 0
+    ? `Bestaande categorieën (gebruik er één als die goed past, met exact dezelfde naam en kleur):\n${JSON.stringify(cats.map(c => ({ naam: c.naam, kleur: c.kleur })), null, 2)}`
+    : 'Er zijn nog geen bestaande categorieën — maak een nieuwe aan.';
+
+  const bestaandeKleuren = cats.map(c => c.kleur).join(', ') || 'geen';
+
+  const prompt = `Je bent een professionele schrijver die Wikipedia-artikelen omzet naar heldere, boeiende lessen.
+
+Je krijgt het Wikipedia-artikel: "${titel}"
+
+JOUW TAAK:
+1. Bepaal hoeveel secties nodig zijn (minimaal 3, maximaal 6) op basis van de lengte en complexiteit van het artikel
+2. Schrijf elke sectietekst in goed, helder Nederlands — alsof je een enthousiaste maar heldere journalist bent
+3. Schrijf echte alinea's, geen droge opsommingen of bullet points
+4. Voeg een tijdlijn toe ALLEEN als het artikel duidelijke historische data/gebeurtenissen bevat. Laat het tijdlijn-veld anders volledig weg.
+5. Bepaal de categorie en bijbehorende kleur (zie regels hieronder)
+
+CATEGORIE & KLEUR:
+${catsTekst}
+
+Regels voor nieuwe categorieën:
+- Korte Nederlandse naam, maximaal 20 tekens
+- Voorbeelden: "Biologie", "Middeleeuwse geschiedenis", "Sterrenkunde", "Filosofie", "Architectuur", "Technologie", "Geografie", "Kunst & cultuur"
+- Kleur moet goed leesbaar zijn op donkere achtergrond (#0f0f0f)
+- Niet te donker (perceived lightness > 50%), niet bruin/zwart/wit
+- Duidelijk anders dan bestaande kleuren: ${bestaandeKleuren}
+- Goede kleurvoorbeelden: #7cb9e8, #e07b6a, #82d4b0, #c9a0dc, #f4c56a, #6fbad4, #e8926a
+
+GEEF JE ANTWOORD UITSLUITEND ALS GELDIGE JSON — geen uitleg, geen markdown, geen backticks.
+
+{
+  "categorie": "Naam van de categorie",
+  "categorieKleur": "#hexkleur",
+  "secties": [
+    {
+      "titel": "Titel van de sectie",
+      "tekst": "De herschreven leesbare tekst. Gebruik \\n\\n tussen alinea's.",
+      "tijdlijn": [{"jaar": "1850", "gebeurtenis": "Wat er gebeurde"}]
+    }
+  ]
+}
+
+ARTIKEL TEKST:
+${ingekorte}`;
+
+  return await geminiCall(key, prompt);
+}
+
+// CALL 2 — maak vragen op basis van de herschreven lestekst
+async function maakVragenMetGemini(titel, secties) {
+  const key = await haalKey();
+
+  // Stuur alleen de herschreven tekst mee, niet de ruwe Wikipedia-tekst
+  const sectiesVoorVragen = secties.map((s, i) => ({
+    sectie: i + 1,
+    titel:  s.titel,
+    tekst:  s.tekst
+  }));
+
+  const prompt = `Je bent een professionele toetsenmaker. Hieronder staat een herschreven les over "${titel}", verdeeld in secties. Maak per sectie 2 à 3 vragen.
+
+VRAGENREGELS — lees deze zorgvuldig:
+
+ALGEMEEN:
+- Elke vraag moet zelfstandig begrijpelijk zijn, ook zonder de lestekst erbij
+- Toets bij voorkeur verbanden, oorzaken, gevolgen en betekenis — niet alleen losse feiten
+- Minstens de helft van alle vragen moet gaan over waarom iets zo is, waardoor iets gebeurde, wat het gevolg was, of wat het verband is tussen twee concepten
+
+MEERKEUZE:
+- Exact 4 opties per vraag, precies 1 goed antwoord
+- De waarde van "goed" moet EXACT overeenkomen met één van de opties — zelfde tekst, zelfde hoofdletters, geen extra spaties
+- Afleidopties zijn plausibel en niet makkelijk te elimineren
+
+OPEN VRAGEN — strikte regels:
+- Het antwoord is een specifiek begrip, naam, getal of herkenbare korte zin (1-5 woorden)
+- Het antwoord moet ZELFSTANDIG BETEKENISVOL zijn: iemand die alleen het antwoord leest begrijpt wat er bedoeld wordt
+- VERBODEN als antwoord: losse bijvoeglijk naamwoorden ("oude", "grote", "nieuwe", "eerste"), vage losse fragmenten, woorden die alleen in context betekenis hebben
+- VERBODEN vraagvormen: invulvragen ("welk woord ontbreekt?"), vragen waarbij het antwoord een losse woordfragment uit een zin is
+- Goed voorbeeld → vraag: "Wie ontdekte de penicilline?" antwoord: "Alexander Fleming"
+- Goed voorbeeld → vraag: "In welk jaar brak de Eerste Wereldoorlog uit?" antwoord: "1914"
+- Goed voorbeeld → vraag: "Welke organisatie stelt de officiële spellingregels voor het Nederlands vast?" antwoord: "Taalunie"
+- FOUT voorbeeld → vraag: "Welke samenleving werd bekritiseerd?" antwoord: "oude" ← DIT IS VERBODEN
+- FOUT voorbeeld → vraag: "Welk land was het grootst?" antwoord: "Russische" ← DIT IS VERBODEN
+
+GEEF JE ANTWOORD UITSLUITEND ALS GELDIGE JSON — geen uitleg, geen markdown, geen backticks.
+Geef exact evenveel secties terug als je hebt ontvangen, in dezelfde volgorde.
+
+{
+  "secties": [
+    {
+      "vragen": [
+        {
+          "type": "meerkeuze",
+          "vraag": "De vraag?",
+          "opties": ["Optie A", "Optie B", "Optie C", "Optie D"],
+          "goed": "Optie A"
+        },
+        {
+          "type": "open",
+          "vraag": "De vraag?",
+          "antwoord": "kort antwoord"
+        }
+      ]
+    }
+  ]
+}
+
+LES INHOUD:
+${JSON.stringify(sectiesVoorVragen, null, 2)}`;
+
+  return await geminiCall(key, prompt);
+}
+
+// Combineer de twee calls tot één lesObject
+async function verwerkMetGemini(titel, tekst) {
+  // Call 1: tekst herschrijven
+  const tekstResultaat = await verwerkTekstMetGemini(titel, tekst);
+
+  if (!tekstResultaat.secties || tekstResultaat.secties.length === 0) {
+    throw new Error('Gemini kon het artikel niet in secties opdelen. Probeer het opnieuw.');
   }
 
-  return lesObj;
+  if (tekstResultaat.categorie && tekstResultaat.categorieKleur) {
+    await registreerCategorie(tekstResultaat.categorie, tekstResultaat.categorieKleur);
+  }
+
+  // Kleine pauze tussen de twee calls (niet strikt nodig, maar netjes)
+  await new Promise(r => setTimeout(r, 500));
+
+  // Call 2: vragen maken op basis van herschreven tekst
+  const vragenResultaat = await maakVragenMetGemini(titel, tekstResultaat.secties);
+
+  if (!vragenResultaat.secties || vragenResultaat.secties.length === 0) {
+    throw new Error('Gemini kon geen vragen genereren. Probeer het opnieuw.');
+  }
+
+  // Samenvoegen: tekst + vragen per sectie
+  const secties = tekstResultaat.secties.map((sectie, i) => ({
+    ...sectie,
+    vragen: vragenResultaat.secties[i]?.vragen || []
+  }));
+
+  return {
+    categorie:      tekstResultaat.categorie,
+    categorieKleur: tekstResultaat.categorieKleur,
+    secties
+  };
 }
 
 // ════════════════════════════════════════
@@ -983,20 +1082,23 @@ async function maakLes() {
     setStatus('Wikipedia hoofdpagina ophalen...', 10);
     const naam = await haalUitgelichtArtikel();
 
-    setStatus(`"${naam}" ophalen...`, 30);
+    setStatus(`"${naam}" ophalen...`, 22);
     const { titel, tekst } = await haalVolledigeTekst(naam);
     artikelTitel = titel;
 
-    setStatus('Gemini verwerkt het artikel en bepaalt de categorie...', 45, true);
-    startSchijnVoortgang(45, 88);
+    // Call 1
+    setStatus('Gemini herschrijft het artikel...', 35, true);
+    startSchijnVoortgang(35, 62);
     lesData = await verwerkMetGemini(titel, tekst);
+    // (verwerkMetGemini doet intern beide calls en pauzeert ertussenin)
 
     stopSchijnVoortgang();
-    setStatus('Les klaar!', 100);
 
     huidigeCategorieKleur = lesData.categorieKleur || '#c8a96e';
     huidigeCategorieNaam  = lesData.categorie || '';
     pasCategorieKleurToe(huidigeCategorieKleur);
+
+    setStatus('Les klaar!', 100);
 
     await slaLesOp({
       titel:          artikelTitel,
@@ -1142,8 +1244,14 @@ function toonSectie(index) {
   document.getElementById('sectie-titel').textContent        = sectie.titel;
   document.getElementById('sectie-nummer-tekst').textContent = `Pagina ${index + 1} van ${totaal}`;
 
+  // FIX: dot werd nooit zichtbaar gemaakt — display is nu correct ingesteld
   const dot = document.getElementById('sectie-label-dot');
-  if (huidigeCategorieKleur) dot.style.background = huidigeCategorieKleur;
+  if (huidigeCategorieKleur) {
+    dot.style.background = huidigeCategorieKleur;
+    dot.style.display    = 'inline-block';
+  } else {
+    dot.style.display = 'none';
+  }
 
   updateReaderCatBadge();
 
@@ -1279,12 +1387,13 @@ function toonVraag(vi) {
     blok.querySelectorAll('.optie-knop').forEach(knop => {
       knop.addEventListener('click', function () {
         if (beantwoord) return;
+        // FIX: trim() bij vergelijking voor robuustheid
         const gekozen = vraag.opties[parseInt(this.dataset.oi)];
-        const goed    = gekozen === vraag.goed;
+        const goed    = gekozen.trim() === vraag.goed.trim();
 
         blok.querySelectorAll('.optie-knop').forEach(k => {
           k.disabled = true;
-          if (k.textContent === vraag.goed) k.classList.add('gemist');
+          if (k.textContent.trim() === vraag.goed.trim()) k.classList.add('gemist');
         });
         this.classList.remove('gemist');
         this.classList.add(goed ? 'goed' : 'fout');
@@ -1390,7 +1499,8 @@ function markeerHuidigeVraagFout() {
     const opties = document.querySelectorAll('#opties-0 .optie-knop');
     opties.forEach(k => {
       k.disabled = true;
-      if (k.textContent === vraag.goed) k.classList.add('goed');
+      // FIX: trim() voor consistente vergelijking
+      if (k.textContent.trim() === vraag.goed.trim()) k.classList.add('goed');
     });
     const fb = document.getElementById('feedback-0');
     if (fb) {
@@ -1581,12 +1691,13 @@ function toonHerhalingsRonde() {
       blok.querySelectorAll('.optie-knop').forEach(knop => {
         knop.addEventListener('click', function () {
           if (rondeResultaten[hi].beantwoord) return;
+          // FIX: trim() bij vergelijking
           const gekozen = vraag.opties[parseInt(this.dataset.oi)];
-          const goed    = gekozen === vraag.goed;
+          const goed    = gekozen.trim() === vraag.goed.trim();
 
           blok.querySelectorAll('.optie-knop').forEach(k => {
             k.disabled = true;
-            if (k.textContent === vraag.goed) k.classList.add('gemist');
+            if (k.textContent.trim() === vraag.goed.trim()) k.classList.add('gemist');
           });
           this.classList.remove('gemist');
           this.classList.add(goed ? 'goed' : 'fout');
@@ -1668,20 +1779,16 @@ function toonKlaarScherm() {
 }
 
 // ════════════════════════════════════════
-// START  — async bootstrap
+// START — async bootstrap
 // ════════════════════════════════════════
 (async () => {
   try {
     db = await openDB();
     await migreerVanLocalStorage();
   } catch (e) {
-    console.warn('IndexedDB niet beschikbaar:', e);
+    console.warn('IndexedDB niet beschikbaar, gebruik in-memory opslag:', e);
     db = null;
-    const _mem = {};
-    window.dbGet        = k     => Promise.resolve(_mem[k] ?? null);
-    window.dbSet        = (k,v) => { _mem[k] = v; return Promise.resolve(); };
-    window.dbDelete     = k     => { delete _mem[k]; return Promise.resolve(); };
-    window.dbGetAllKeys = ()    => Promise.resolve(Object.keys(_mem));
+    // db = null triggert automatisch de _memFallback in dbGet/dbSet/etc.
   }
   herstelLayout();
   await init();
