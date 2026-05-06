@@ -192,6 +192,12 @@ header {
 
 #les-voortgang.zichtbaar { display: block; }
 
+/* FIX: .vervaag bestond niet — voortgangsbalk verdwijnt nu correct aan het einde van een les */
+#les-voortgang.vervaag {
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
 #les-voortgang-balk {
   height: 100%;
   background: var(--les-kleur);
@@ -696,6 +702,16 @@ header {
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--text);
+}
+
+/* FIX: sectie-label-dot had geen afmetingen of vorm — nu correct gestyled */
+#sectie-label-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 0.4rem;
+  vertical-align: middle;
 }
 
 .sectie-tekst {
