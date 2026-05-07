@@ -222,6 +222,17 @@
     <div class="klaar-stats" id="klaar-stats"></div>
     <button class="knop-secundair" onclick="location.reload()">Terug naar begin</button>
   </div>
+  
+  <!-- ═══ STATS MODAL ═══ -->
+<div id="stats-modal" onclick="if(event.target===this) sluitStatsModal()">
+  <div class="modal-kaart stats-modal-kaart">
+    <div class="stats-modal-header">
+      <h3>Mijn voortgang</h3>
+      <button class="stats-sluit-knop" onclick="sluitStatsModal()">✕</button>
+    </div>
+    <div id="stats-inhoud"></div>
+  </div>
+</div>
 
 </div><!-- /app-shell -->
   
