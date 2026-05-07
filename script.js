@@ -270,6 +270,136 @@ function toonToast(tekst, duur = 2500) {
 }
 
 // ════════════════════════════════════════
+// STATS MODAL
+// ════════════════════════════════════════
+function toonStatsModal() {
+  document.getElementById('stats-modal').classList.add('zichtbaar');
+  renderStats();
+}
+
+function sluitStatsModal() {
+  document.getElementById('stats-modal').classList.remove('zichtbaar');
+}
+
+async function renderStats() {
+  const el  = document.getElementById('stats-inhoud');
+  const sr  = await haalSRData();
+
+  if (!sr || sr.length === 0) {
+    el.innerHTML = `<div class="stats-leeg">
+      🌱 Nog geen data — maak je eerste les<br/>om je voortgang bij te houden.
+    </div>`;
+    return;
+  }
+
+  // ── Berekeningen ──
+  const totaal  = sr.length;
+  const nieuw   = sr.filter(i => (i.strength ?? 20) < 35).length;
+  const lerend  = sr.filter(i => (i.strength ?? 20) >= 35 && (i.strength ?? 20) < 70).length;
+  const beheerst = sr.filter(i => (i.strength ?? 20) >= 70).length;
+  const gemStr  = Math.round(sr.reduce((s, i) => s + (i.strength ?? 20), 0) / totaal);
+
+  const vandaag = Date.now();
+  const dueMorgen = new Date(); dueMorgen.setDate(dueMorgen.getDate() + 1); dueMorgen.setHours(23,59,59,999);
+  const teHerhalen = sr.filter(i => i.next_due && i.next_due <= vandaag).length;
+  const morgenDue  = sr.filter(i => i.next_due && i.next_due > vandaag && i.next_due <= dueMorgen.getTime()).length;
+
+  // ── Per categorie ──
+  const catMap = {};
+  for (const item of sr) {
+    const naam  = item.categorieNaam  || 'Overig';
+    const kleur = item.categorieKleur || '#c8a96e';
+    if (!catMap[naam]) catMap[naam] = { kleur, items: [] };
+    catMap[naam].items.push(item.strength ?? 20);
+  }
+  const catLijst = Object.entries(catMap)
+    .map(([naam, { kleur, items }]) => ({
+      naam, kleur,
+      aantal: items.length,
+      gemStr: Math.round(items.reduce((s, v) => s + v, 0) / items.length)
+    }))
+    .sort((a, b) => b.aantal - a.aantal);
+
+  // ── Volgende herhaling tekst ──
+  let volgendeTekst = '';
+  if (teHerhalen > 0) {
+    volgendeTekst = `🔁 ${teHerhalen} vraag${teHerhalen !== 1 ? 'en' : ''} wacht${teHerhalen === 1 ? '' : 'en'} op herhaling`;
+  } else if (morgenDue > 0) {
+    volgendeTekst = `✓ Alles gedaan — morgen ${morgenDue} vraag${morgenDue !== 1 ? 'en' : ''} terug`;
+  } else {
+    const eerstVolgende = sr
+      .filter(i => i.next_due && i.next_due > vandaag)
+      .sort((a, b) => a.next_due - b.next_due)[0];
+    if (eerstVolgende) {
+      const d = new Date(eerstVolgende.next_due);
+      volgendeTekst = `✓ Volgende herhaling op ${d.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}`;
+    } else {
+      volgendeTekst = `✓ Geen herhalingen gepland`;
+    }
+  }
+
+  // ── Render ──
+  const nPct = totaal > 0 ? Math.round((nieuw    / totaal) * 100) : 0;
+  const lPct = totaal > 0 ? Math.round((lerend   / totaal) * 100) : 0;
+  const bPct = totaal > 0 ? Math.round((beheerst / totaal) * 100) : 0;
+
+  el.innerHTML = `
+    <div class="stats-hero">
+      <div class="stats-hero-item">
+        <div class="stats-hero-getal">${totaal}</div>
+        <div class="stats-hero-label">Vragen geleerd</div>
+      </div>
+      <div class="stats-hero-item">
+        <div class="stats-hero-getal">${beheerst}</div>
+        <div class="stats-hero-label">Beheerst</div>
+      </div>
+      <div class="stats-hero-item">
+        <div class="stats-hero-getal">${gemStr}%</div>
+        <div class="stats-hero-label">Gem. sterkte</div>
+      </div>
+    </div>
+
+    <div class="stats-sectie-kop">Sterkte verdeling</div>
+    <div class="stats-verdeling">
+      <div class="stats-verdeling-balk" style="width:${nPct}%;background:var(--fout)"></div>
+      <div class="stats-verdeling-balk" style="width:${lPct}%;background:var(--accent)"></div>
+      <div class="stats-verdeling-balk" style="width:${bPct}%;background:var(--goed)"></div>
+    </div>
+    <div class="stats-legenda">
+      <span class="stats-legenda-item">
+        <span class="stats-legenda-dot" style="background:var(--fout)"></span>
+        Nieuw (${nieuw})
+      </span>
+      <span class="stats-legenda-item">
+        <span class="stats-legenda-dot" style="background:var(--accent)"></span>
+        Aan het leren (${lerend})
+      </span>
+      <span class="stats-legenda-item">
+        <span class="stats-legenda-dot" style="background:var(--goed)"></span>
+        Beheerst (${beheerst})
+      </span>
+    </div>
+
+    <div class="stats-sectie-kop">Categorieën</div>
+    <div>
+      ${catLijst.map(c => `
+        <div class="stats-cat-rij">
+          <div class="stats-cat-dot" style="background:${c.kleur}"></div>
+          <div class="stats-cat-naam">${c.naam}</div>
+          <div class="stats-cat-balk-wrap">
+            <div class="stats-cat-balk" style="width:${c.gemStr}%;background:${sterktekleur(c.gemStr)}"></div>
+          </div>
+          <div class="stats-cat-getal">${c.gemStr}%</div>
+          <div class="stats-cat-getal" style="min-width:32px">${c.aantal} ✦</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="stats-volgende">${volgendeTekst}</div>
+  `;
+}
+
+// ════════════════════════════════════════
 // DATUM / TIJD HELPERS
 // ════════════════════════════════════════
 function vandaagSleutel() {
