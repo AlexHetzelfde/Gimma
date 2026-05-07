@@ -1461,3 +1461,193 @@ body.layout-telefoon .layout-indicator {
   font-size: 0.85rem;
   color: var(--muted);
 }
+/* ---------- STATS MODAL ---------- */
+#stats-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 24, 21, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 100;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+#stats-modal.zichtbaar { display: flex; }
+
+.stats-modal-kaart {
+  max-width: 520px;
+  width: 100%;
+  margin: auto;
+}
+
+.stats-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.stats-sluit-knop {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  width: 30px; height: 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: border-color 0.15s, color 0.15s;
+}
+.stats-sluit-knop:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Hero getallen */
+.stats-hero {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.stats-hero-item {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 0.75rem;
+  text-align: center;
+}
+
+.stats-hero-getal {
+  font-family: 'Lora', serif;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--les-kleur);
+  line-height: 1;
+  margin-bottom: 0.3rem;
+  transition: color 0.4s;
+}
+
+.stats-hero-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Sectie-kop */
+.stats-sectie-kop {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+/* Sterkte verdeling */
+.stats-verdeling {
+  display: flex;
+  height: 10px;
+  border-radius: 6px;
+  overflow: hidden;
+  gap: 2px;
+  margin-bottom: 0.6rem;
+}
+
+.stats-verdeling-balk {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+  min-width: 4px;
+}
+
+.stats-legenda {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.stats-legenda-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.stats-legenda-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Categorieën */
+.stats-cat-rij {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.stats-cat-rij:last-child { border-bottom: none; }
+
+.stats-cat-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stats-cat-naam {
+  font-size: 0.88rem;
+  font-weight: 500;
+  flex: 1;
+  color: var(--text);
+}
+
+.stats-cat-balk-wrap {
+  width: 90px;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.stats-cat-balk {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.stats-cat-getal {
+  font-size: 0.78rem;
+  color: var(--muted);
+  min-width: 26px;
+  text-align: right;
+}
+
+/* Volgende herhaling */
+.stats-volgende {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+}
+
+.stats-leeg {
+  text-align: center;
+  padding: 2rem 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
