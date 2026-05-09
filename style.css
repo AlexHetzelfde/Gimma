@@ -2102,3 +2102,20 @@ body.layout-telefoon .knop-flashcard-goed {
 /* Oude knop en melding permanent verbergen */
 #knop-les { display: none !important; }
 #cache-melding { display: none !important; }
+
+/* ═══════════════════════════════════════
+   DECORATIEVE DRIEHOEK OP HOME
+═══════════════════════════════════════ */
+.home-driehoek {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 55vw;           /* 55% van het scherm breed */
+  height: 55vw;
+  max-width: 500px;
+  max-height: 500px;
+  background: linear-gradient(225deg, rgba(237, 91, 54, 0.18) 0%, transparent 70%);
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
+  z-index: 0;
+  pointer-events: none;
+}
