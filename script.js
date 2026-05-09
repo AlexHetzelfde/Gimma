@@ -236,7 +236,6 @@ function pasCategorieKleurToe(kleur) {
   if (!kleur || !/^#[0-9a-fA-F]{6}$/i.test(kleur)) kleur = '#c8a96e';
   document.documentElement.style.setProperty('--les-kleur', kleur);
   document.documentElement.style.setProperty('--les-kleur-rgb', hexNaarRgb(kleur));
-  // Sync mobile date dot kleur
   const dot = document.getElementById('datum-mobiel-dot');
   if (dot) dot.style.background = kleur;
 }
@@ -295,23 +294,19 @@ async function renderStats() {
     return;
   }
 
-  // ── Basisberekeningen ──
   const totaal   = sr.length;
   const nieuw    = sr.filter(i => (i.strength ?? 20) < 35).length;
   const lerend   = sr.filter(i => (i.strength ?? 20) >= 35 && (i.strength ?? 20) < 70).length;
   const beheerst = sr.filter(i => (i.strength ?? 20) >= 70).length;
   const gemStr   = Math.round(sr.reduce((s, i) => s + (i.strength ?? 20), 0) / totaal);
 
-  // ── Unieke lessen (artikelen) ──
   const uniekeLessen = new Set(
     sr.map(i => {
-      // ID formaat: artikelnaam_s0_v0 — haal de artikelbasis eruit
       const match = i.id.match(/^(.+)_s\d+_v\d+$/);
       return match ? match[1] : i.id;
     })
   ).size;
 
-  // ── Due en gepland ──
   const vandaag = Date.now();
   const dueMorgen = new Date();
   dueMorgen.setDate(dueMorgen.getDate() + 1);
@@ -320,7 +315,6 @@ async function renderStats() {
   const teHerhalen = sr.filter(i => i.next_due && i.next_due <= vandaag).length;
   const morgenDue  = sr.filter(i => i.next_due && i.next_due > vandaag && i.next_due <= dueMorgen.getTime()).length;
 
-  // ── Weekactiviteit (laatste 7 dagen) ──
   const dagNamen = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za'];
   const weekData = [];
   for (let d = 6; d >= 0; d--) {
@@ -342,7 +336,6 @@ async function renderStats() {
   }
   const maxWeek = Math.max(...weekData.map(d => d.count), 1);
 
-  // ── Per categorie ──
   const catMap = {};
   for (const item of sr) {
     const naam  = item.categorieNaam  || 'Overig';
@@ -358,7 +351,6 @@ async function renderStats() {
     }))
     .sort((a, b) => b.aantal - a.aantal);
 
-  // ── Volgende herhaling tekst ──
   let volgendeTekst = '';
   if (teHerhalen > 0) {
     volgendeTekst = `🔁 ${teHerhalen} vraag${teHerhalen !== 1 ? 'en' : ''} wacht${teHerhalen === 1 ? '' : 'en'} op herhaling`;
@@ -376,12 +368,10 @@ async function renderStats() {
     }
   }
 
-  // ── Percentages ──
   const nPct = totaal > 0 ? Math.round((nieuw    / totaal) * 100) : 0;
   const lPct = totaal > 0 ? Math.round((lerend   / totaal) * 100) : 0;
   const bPct = totaal > 0 ? Math.round((beheerst / totaal) * 100) : 0;
 
-  // ── Weekactiviteit HTML ──
   const weekHtml = weekData.map(dag => {
     const hoogtePct = dag.count > 0 ? Math.max(12, Math.round((dag.count / maxWeek) * 100)) : 6;
     const heeftData = dag.count > 0;
@@ -399,7 +389,6 @@ async function renderStats() {
     `;
   }).join('');
 
-  // ── Due vandaag sectie ──
   const dueBalkHtml = teHerhalen > 0
     ? `<div class="stats-due-balk">
         <div class="stats-due-tekst">
@@ -418,9 +407,7 @@ async function renderStats() {
         </div>`
       : '';
 
-  // ── Render ──
   el.innerHTML = `
-    <!-- Hero: 2×2 raster -->
     <div class="stats-hero">
       <div class="stats-hero-item accent-tegel">
         <div class="stats-hero-getal">${totaal}</div>
@@ -618,10 +605,8 @@ const datumTekst = new Date().toLocaleDateString('nl-NL', {
 
 document.getElementById('header-datum').textContent = datumTekst;
 
-// Mobile datumbalk (zichtbaar via CSS in layout-telefoon)
 const datumMobielEl = document.getElementById('datum-mobiel-tekst');
 if (datumMobielEl) {
-  // Korte versie voor mobile: "zaterdag 9 mei 2026"
   datumMobielEl.textContent = datumTekst;
 }
 
@@ -766,58 +751,112 @@ function updateReaderCatBadge() {
 }
 
 // ════════════════════════════════════════
-// SR REVIEW — één vraag per keer (FLASHCARD)
+// SR REVIEW — rondes totdat alles goed is
 // ════════════════════════════════════════
 function toonSRReview(dueItems) {
   const wrap = document.getElementById('sr-review-wrap');
   wrap.style.display = 'block';
 
-  const totaal = dueItems.length;
-  let huidigeIndex = 0;
-  const srResultaten = [];
-
-  function updateSubTitel() {
-    document.getElementById('sr-review-sub').textContent =
-      `Vraag ${huidigeIndex + 1} van ${totaal}`;
-  }
-
-  updateSubTitel();
+  // Houdt bij hoeveel rondes we al hebben gedraaid
+  let rondeNummer  = 1;
+  // De huidige wachtrij (begint met alle due items, daarna alleen de foute)
+  let rondeWachtrij = [...dueItems];
+  // Resultaten van de huidige ronde
+  let rondeResultaten = [];
 
   const inhoud = document.getElementById('sr-vragen-inhoud');
   inhoud.innerHTML = '';
 
-  function toonSREinde() {
-    inhoud.innerHTML = '';
-    const goedAantal = srResultaten.filter(r => r.goed).length;
-    const pct        = Math.round((goedAantal / totaal) * 100);
-
-    document.getElementById('sr-review-sub').textContent = 'Klaar!';
-
-    const scoreEl = document.getElementById('sr-score-tekst');
-    scoreEl.innerHTML =
-      `<strong>${goedAantal} van ${totaal}</strong> goed (${pct}%)` +
-      (goedAantal < totaal
-        ? ` — foute vragen komen morgen terug`
-        : ` — alles onthouden! 🎉`);
-
-    const klaarBalk = document.getElementById('sr-klaar-balk');
-    klaarBalk.style.display = 'flex';
-    window.scrollTo({ top: wrap.offsetTop - 40, behavior: 'smooth' });
+  // ── Update de subtitel ──
+  function updateSubTitel(huidigeIndex) {
+    const rondeLabel = rondeNummer > 1 ? ` · ronde ${rondeNummer}` : '';
+    document.getElementById('sr-review-sub').textContent =
+      `Vraag ${huidigeIndex + 1} van ${rondeWachtrij.length}${rondeLabel}`;
   }
 
+  // ── Start een nieuwe ronde ──
+  function startRonde() {
+    rondeResultaten = new Array(rondeWachtrij.length).fill(null);
+    toonSRVraag(0);
+  }
+
+  // ── Einde van een ronde: check of alles goed is ──
+  function toonSREinde() {
+    inhoud.innerHTML = '';
+
+    const fouteItems = rondeWachtrij.filter((_, i) =>
+      rondeResultaten[i] && !rondeResultaten[i].goed
+    );
+
+    if (fouteItems.length > 0) {
+      // ── Niet alles goed: volgende ronde met alleen de foute ──
+      rondeWachtrij = fouteItems;
+      rondeNummer++;
+
+      document.getElementById('sr-review-sub').textContent =
+        `${fouteItems.length} vraag${fouteItems.length !== 1 ? 'en' : ''} nog fout · ronde ${rondeNummer}`;
+
+      // Tussenscherm: uitleg + knop voor volgende ronde
+      const melding = document.createElement('div');
+      melding.style.cssText =
+        'text-align:center;padding:2rem 1rem 1.5rem;';
+      melding.innerHTML = `
+        <div style="font-size:2rem;margin-bottom:0.65rem;line-height:1">🔁</div>
+        <div style="font-family:'Lora',serif;font-size:1.05rem;font-weight:600;
+                    color:var(--text);margin-bottom:0.4rem;">
+          Nog niet helemaal goed
+        </div>
+        <div style="font-size:0.87rem;color:var(--muted);line-height:1.6;max-width:320px;margin:0 auto 1.5rem;">
+          ${fouteItems.length} vraag${fouteItems.length !== 1 ? 'en' : ''} 
+          ${fouteItems.length !== 1 ? 'komen' : 'komt'} terug.
+          Je kan pas door als alles goed is.
+        </div>
+      `;
+      inhoud.appendChild(melding);
+
+      const knopOpnieuw = document.createElement('button');
+      knopOpnieuw.className   = 'knop-primair';
+      knopOpnieuw.style.cssText = 'width:100%;';
+      knopOpnieuw.textContent = `Opnieuw oefenen (${fouteItems.length}) →`;
+      knopOpnieuw.addEventListener('click', () => {
+        inhoud.innerHTML = '';
+        startRonde();
+      });
+      inhoud.appendChild(knopOpnieuw);
+
+      window.scrollTo({ top: wrap.offsetTop - 40, behavior: 'smooth' });
+
+    } else {
+      // ── Alles goed: toon succesmelding + "Doorgaan naar les" ──
+      document.getElementById('sr-review-sub').textContent = 'Alles goed! 🎉';
+
+      const scoreEl = document.getElementById('sr-score-tekst');
+      if (rondeNummer === 1) {
+        scoreEl.innerHTML =
+          `<strong>Alles in één ronde goed!</strong> Knap gedaan. 🎉`;
+      } else {
+        scoreEl.innerHTML =
+          `<strong>Alles onthouden!</strong> Na ${rondeNummer} rondes alles goed. 💪`;
+      }
+
+      const klaarBalk = document.getElementById('sr-klaar-balk');
+      klaarBalk.style.display = 'flex';
+      window.scrollTo({ top: wrap.offsetTop - 40, behavior: 'smooth' });
+    }
+  }
+
+  // ── Toon één SR-vraag ──
   function toonSRVraag(index) {
-    if (index >= totaal) {
+    if (index >= rondeWachtrij.length) {
       toonSREinde();
       return;
     }
 
-    huidigeIndex = index;
-    updateSubTitel();
-
+    updateSubTitel(index);
     inhoud.innerHTML = '';
     window.scrollTo({ top: wrap.offsetTop - 40, behavior: 'smooth' });
 
-    const item      = dueItems[index];
+    const item      = rondeWachtrij[index];
     const itemKleur = item.categorieKleur || '#c8a96e';
     const itemRgb   = hexNaarRgb(itemKleur);
 
@@ -829,9 +868,9 @@ function toonSRReview(dueItems) {
     blok.style.padding      = '1.1rem 1.2rem';
     blok.style.marginBottom = '0';
 
-    const strength     = item.strength ?? 20;
-    const kleur        = sterktekleur(strength);
-    const catTagHtml   = item.categorieNaam
+    const strength   = item.strength ?? 20;
+    const kleur      = sterktekleur(strength);
+    const catTagHtml = item.categorieNaam
       ? `<span class="sr-cat-tag" style="background:rgba(${itemRgb},0.15);color:${itemKleur}">● ${item.categorieNaam}</span>`
       : '';
 
@@ -845,42 +884,41 @@ function toonSRReview(dueItems) {
         ${catTagHtml}
       </div>`;
 
-    function maakVolgendeKnop(goed) {
+    // Voeg de Volgende-knop toe nadat iemand heeft geantwoord
+    function maakVolgendeKnop() {
       const knopWrap = document.createElement('div');
       knopWrap.style.marginTop = '1rem';
 
-      const isLaatste = index === totaal - 1;
+      const isLaatste = index === rondeWachtrij.length - 1;
       const knop = document.createElement('button');
       knop.className   = 'knop-primair';
       knop.style.width = '100%';
-      knop.textContent = isLaatste ? 'Bekijk resultaat →' : `Volgende →`;
-
-      knop.addEventListener('click', () => {
-        toonSRVraag(index + 1);
-      });
+      knop.textContent = isLaatste ? 'Bekijk resultaat →' : 'Volgende →';
+      knop.addEventListener('click', () => toonSRVraag(index + 1));
 
       knopWrap.appendChild(knop);
       blok.appendChild(knopWrap);
     }
 
     function verwerkAntwoord(goed) {
-      srResultaten[index] = { goed };
+      rondeResultaten[index] = { goed };
 
+      // Sla het antwoord op in de SR data met de categorie van dit item
       const voorheen = [huidigeCategorieKleur, huidigeCategorieNaam];
       huidigeCategorieKleur = itemKleur;
       huidigeCategorieNaam  = item.categorieNaam || '';
 
       registreerAntwoord({
-        id:          item.id,
-        vraag:       item.vraag,
-        type:        item.type,
+        id:           item.id,
+        vraag:        item.vraag,
+        type:         item.type,
         antwoordData: { antwoord: item.antwoord || item.goed || '' },
         goed
       });
 
       [huidigeCategorieKleur, huidigeCategorieNaam] = voorheen;
 
-      setTimeout(() => maakVolgendeKnop(goed), 400);
+      setTimeout(() => maakVolgendeKnop(), 400);
     }
 
     const antwoord = item.antwoord || item.goed || '';
@@ -903,7 +941,7 @@ function toonSRReview(dueItems) {
     let beantwoord = false;
 
     blok.querySelector('.knop-onthul').addEventListener('click', () => {
-      document.getElementById(`sr-onthul-${index}`).style.display = 'none';
+      document.getElementById(`sr-onthul-${index}`).style.display   = 'none';
       document.getElementById(`sr-antwoord-${index}`).style.display = 'block';
     });
 
@@ -926,7 +964,8 @@ function toonSRReview(dueItems) {
     inhoud.appendChild(blok);
   }
 
-  toonSRVraag(0);
+  // Eerste ronde starten
+  startRonde();
 }
 
 async function afrondSRReview() {
