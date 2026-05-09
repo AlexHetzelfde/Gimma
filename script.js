@@ -224,7 +224,7 @@ async function registreerCategorie(naam, kleur) {
 
 function hexNaarRgb(hex) {
   const clean = (hex || '').replace('#', '');
-  if (!/^[0-9a-fA-F]{6}$/.test(clean)) return '200, 169, 110';
+  if (!/^[0-9a-fA-F]{6}$/.test(clean)) return '237, 91, 54';
   return [
     parseInt(clean.slice(0, 2), 16),
     parseInt(clean.slice(2, 4), 16),
@@ -233,14 +233,14 @@ function hexNaarRgb(hex) {
 }
 
 function pasCategorieKleurToe(kleur) {
-  if (!kleur || !/^#[0-9a-fA-F]{6}$/i.test(kleur)) kleur = '#c8a96e';
+  if (!kleur || !/^#[0-9a-fA-F]{6}$/i.test(kleur)) kleur = '#ed5b36';
   document.documentElement.style.setProperty('--les-kleur', kleur);
   document.documentElement.style.setProperty('--les-kleur-rgb', hexNaarRgb(kleur));
   const dot = document.getElementById('datum-mobiel-dot');
   if (dot) dot.style.background = kleur;
 }
 
-let huidigeCategorieKleur = '#c8a96e';
+let huidigeCategorieKleur = '#ed5b36';
 let huidigeCategorieNaam  = '';
 
 // ════════════════════════════════════════
@@ -756,7 +756,7 @@ function toonSRReview(dueItems) {
     window.scrollTo({ top: wrap.offsetTop - 40, behavior: 'smooth' });
 
     const item = rondeWachtrij[index];
-    const itemKleur = item.categorieKleur || '#e68a2e';
+    const itemKleur = item.categorieKleur || '#ed5b36';
     const itemRgb = hexNaarRgb(itemKleur);
     const vraagType = item.type || 'flashcard';
 
