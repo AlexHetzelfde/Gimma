@@ -1679,7 +1679,7 @@ function toonVraag(vi) {
   inhoud.innerHTML = '';
 
   // --- Bepaal type vraag ---
-  const vraagType = vraag.type || 'flashcard'; // fallback
+  const vraagType = vraag.type || 'flashcard';
 
   if (vraagType === 'multiplechoice') {
     // --- Meerkeuze UI ---
@@ -1931,7 +1931,7 @@ function volgendeSectie() {
 }
 
 // ════════════════════════════════════════
-// HERHALING (FLASHCARD)
+// HERHALING (FLASHCARD) — FIX: antwoord voor MC-vragen
 // ════════════════════════════════════════
 let herhalingsWachtrij = [];
 
@@ -2008,8 +2008,15 @@ function toonHerhalingsRonde() {
 
   herhalingsWachtrij.forEach((item, hi) => {
     const vraag   = item.vraagData;
-    const antwoord = vraag.antwoord || vraag.goed || '';
-    const blok    = document.createElement('div');
+    // ═══ FIX: juiste antwoordtekst afhankelijk van vraagtype ═══
+    let antwoord;
+    if (vraag.type === 'multiplechoice') {
+      antwoord = vraag.opties?.[vraag.correcteIndex] ?? '';
+    } else {
+      antwoord = vraag.antwoord || vraag.goed || '';
+    }
+
+    const blok = document.createElement('div');
     blok.className = 'vraag-blok';
 
     blok.innerHTML = `
@@ -2074,6 +2081,7 @@ function toonHerhalingsRonde() {
     inhoud.appendChild(blok);
   });
 }
+
 function toonKlaarScherm() {
   document.getElementById('les-scherm').classList.remove('zichtbaar');
   document.getElementById('shields-balk').style.display = 'none';
