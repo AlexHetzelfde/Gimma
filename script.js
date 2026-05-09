@@ -236,6 +236,9 @@ function pasCategorieKleurToe(kleur) {
   if (!kleur || !/^#[0-9a-fA-F]{6}$/i.test(kleur)) kleur = '#c8a96e';
   document.documentElement.style.setProperty('--les-kleur', kleur);
   document.documentElement.style.setProperty('--les-kleur-rgb', hexNaarRgb(kleur));
+  // Sync mobile date dot kleur
+  const dot = document.getElementById('datum-mobiel-dot');
+  if (dot) dot.style.background = kleur;
 }
 
 let huidigeCategorieKleur = '#c8a96e';
@@ -292,17 +295,52 @@ async function renderStats() {
     return;
   }
 
-  // ── Berekeningen ──
-  const totaal  = sr.length;
-  const nieuw   = sr.filter(i => (i.strength ?? 20) < 35).length;
-  const lerend  = sr.filter(i => (i.strength ?? 20) >= 35 && (i.strength ?? 20) < 70).length;
+  // ── Basisberekeningen ──
+  const totaal   = sr.length;
+  const nieuw    = sr.filter(i => (i.strength ?? 20) < 35).length;
+  const lerend   = sr.filter(i => (i.strength ?? 20) >= 35 && (i.strength ?? 20) < 70).length;
   const beheerst = sr.filter(i => (i.strength ?? 20) >= 70).length;
-  const gemStr  = Math.round(sr.reduce((s, i) => s + (i.strength ?? 20), 0) / totaal);
+  const gemStr   = Math.round(sr.reduce((s, i) => s + (i.strength ?? 20), 0) / totaal);
 
+  // ── Unieke lessen (artikelen) ──
+  const uniekeLessen = new Set(
+    sr.map(i => {
+      // ID formaat: artikelnaam_s0_v0 — haal de artikelbasis eruit
+      const match = i.id.match(/^(.+)_s\d+_v\d+$/);
+      return match ? match[1] : i.id;
+    })
+  ).size;
+
+  // ── Due en gepland ──
   const vandaag = Date.now();
-  const dueMorgen = new Date(); dueMorgen.setDate(dueMorgen.getDate() + 1); dueMorgen.setHours(23,59,59,999);
+  const dueMorgen = new Date();
+  dueMorgen.setDate(dueMorgen.getDate() + 1);
+  dueMorgen.setHours(23, 59, 59, 999);
+
   const teHerhalen = sr.filter(i => i.next_due && i.next_due <= vandaag).length;
   const morgenDue  = sr.filter(i => i.next_due && i.next_due > vandaag && i.next_due <= dueMorgen.getTime()).length;
+
+  // ── Weekactiviteit (laatste 7 dagen) ──
+  const dagNamen = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za'];
+  const weekData = [];
+  for (let d = 6; d >= 0; d--) {
+    const dagStart = new Date();
+    dagStart.setDate(dagStart.getDate() - d);
+    dagStart.setHours(0, 0, 0, 0);
+    const dagEind = new Date(dagStart);
+    dagEind.setHours(23, 59, 59, 999);
+    const count = sr.filter(i =>
+      i.last_seen &&
+      i.last_seen >= dagStart.getTime() &&
+      i.last_seen <= dagEind.getTime()
+    ).length;
+    weekData.push({
+      label:    dagNamen[dagStart.getDay()],
+      count,
+      isVandaag: d === 0
+    });
+  }
+  const maxWeek = Math.max(...weekData.map(d => d.count), 1);
 
   // ── Per categorie ──
   const catMap = {};
@@ -338,14 +376,53 @@ async function renderStats() {
     }
   }
 
-  // ── Render ──
+  // ── Percentages ──
   const nPct = totaal > 0 ? Math.round((nieuw    / totaal) * 100) : 0;
   const lPct = totaal > 0 ? Math.round((lerend   / totaal) * 100) : 0;
   const bPct = totaal > 0 ? Math.round((beheerst / totaal) * 100) : 0;
 
+  // ── Weekactiviteit HTML ──
+  const weekHtml = weekData.map(dag => {
+    const hoogtePct = dag.count > 0 ? Math.max(12, Math.round((dag.count / maxWeek) * 100)) : 6;
+    const heeftData = dag.count > 0;
+    return `
+      <div class="stats-week-dag">
+        <div class="stats-week-balk-wrap">
+          <div
+            class="stats-week-balk ${heeftData ? 'heeft-data' : ''} ${dag.isVandaag ? 'vandaag-balk' : ''}"
+            style="height:${hoogtePct}%"
+            title="${dag.count} vragen${dag.isVandaag ? ' (vandaag)' : ''}"
+          ></div>
+        </div>
+        <div class="stats-week-label ${dag.isVandaag ? 'vandaag-label' : ''}">${dag.label}</div>
+      </div>
+    `;
+  }).join('');
+
+  // ── Due vandaag sectie ──
+  const dueBalkHtml = teHerhalen > 0
+    ? `<div class="stats-due-balk">
+        <div class="stats-due-tekst">
+          Te herhalen vandaag
+          <small>Ga naar home om te starten</small>
+        </div>
+        <div class="stats-due-getal">${teHerhalen}</div>
+      </div>`
+    : morgenDue > 0
+      ? `<div class="stats-due-balk" style="background:rgba(90,158,122,0.07);border-color:rgba(90,158,122,0.2)">
+          <div class="stats-due-tekst" style="color:var(--accent2)">
+            Alles vandaag gedaan ✓
+            <small style="color:var(--muted)">Morgen ${morgenDue} vragen terug</small>
+          </div>
+          <div class="stats-due-getal" style="color:var(--accent2)">✓</div>
+        </div>`
+      : '';
+
+  // ── Render ──
   el.innerHTML = `
+    <!-- Hero: 2×2 raster -->
     <div class="stats-hero">
-      <div class="stats-hero-item">
+      <div class="stats-hero-item accent-tegel">
         <div class="stats-hero-getal">${totaal}</div>
         <div class="stats-hero-label">Vragen geleerd</div>
       </div>
@@ -357,7 +434,13 @@ async function renderStats() {
         <div class="stats-hero-getal">${gemStr}%</div>
         <div class="stats-hero-label">Gem. sterkte</div>
       </div>
+      <div class="stats-hero-item">
+        <div class="stats-hero-getal">${uniekeLessen}</div>
+        <div class="stats-hero-label">Lessen gevolgd</div>
+      </div>
     </div>
+
+    ${dueBalkHtml}
 
     <div class="stats-sectie-kop">Sterkte verdeling</div>
     <div class="stats-verdeling">
@@ -380,6 +463,9 @@ async function renderStats() {
       </span>
     </div>
 
+    <div class="stats-sectie-kop">Activiteit (7 dagen)</div>
+    <div class="stats-week-wrap">${weekHtml}</div>
+
     <div class="stats-sectie-kop">Categorieën</div>
     <div>
       ${catLijst.map(c => `
@@ -390,7 +476,7 @@ async function renderStats() {
             <div class="stats-cat-balk" style="width:${c.gemStr}%;background:${sterktekleur(c.gemStr)}"></div>
           </div>
           <div class="stats-cat-getal">${c.gemStr}%</div>
-          <div class="stats-cat-getal" style="min-width:32px">${c.aantal} ✦</div>
+          <div class="stats-cat-getal" style="min-width:36px;text-align:right">${c.aantal} ✦</div>
         </div>
       `).join('')}
     </div>
@@ -524,12 +610,20 @@ function sterktekleur(strength) {
 }
 
 // ════════════════════════════════════════
-// DATUM IN HEADER
+// DATUM IN HEADER + MOBILE DATUMBALK
 // ════════════════════════════════════════
-document.getElementById('header-datum').textContent =
-  new Date().toLocaleDateString('nl-NL', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-  });
+const datumTekst = new Date().toLocaleDateString('nl-NL', {
+  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+});
+
+document.getElementById('header-datum').textContent = datumTekst;
+
+// Mobile datumbalk (zichtbaar via CSS in layout-telefoon)
+const datumMobielEl = document.getElementById('datum-mobiel-tekst');
+if (datumMobielEl) {
+  // Korte versie voor mobile: "zaterdag 9 mei 2026"
+  datumMobielEl.textContent = datumTekst;
+}
 
 // ════════════════════════════════════════
 // LOGO KLIKKEN — terug naar home
@@ -789,7 +883,6 @@ function toonSRReview(dueItems) {
       setTimeout(() => maakVolgendeKnop(goed), 400);
     }
 
-    // ── Flashcard rendering voor SR review ──
     const antwoord = item.antwoord || item.goed || '';
 
     blok.innerHTML = `
@@ -1579,7 +1672,6 @@ function toonVraag(vi) {
   document.getElementById('terug-naar-vraag-balk').style.display  = 'none';
   document.getElementById('vragen-sectie').style.display          = 'block';
 
-  // Weet-niet knop verborgen — flashcard heeft eigen Fout-knop
   document.getElementById('knop-weetniets').style.display = 'none';
   document.getElementById('knop-kijkop').style.display   = 'inline-flex';
 
@@ -1647,7 +1739,6 @@ function toonVraag(vi) {
     }, 120);
   }
 
-  // ── Flashcard rendering ──
   const antwoord = vraag.antwoord || vraag.goed || '';
 
   blok.innerHTML = `
