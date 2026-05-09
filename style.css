@@ -28,13 +28,7 @@
 
 body {
   background-color: var(--bg);
-  background-image:
-    rgba(230, 138, 46, 0.12) 0%, transparent 70%);
-      rgba(var(--les-kleur-rgb), 0.12) 0%,
-      transparent 70%),
-    radial-gradient(ellipse 40% 30% at 90% 80%,
-      rgba(80, 60, 140, 0.15) 0%,
-      transparent 60%);
+  background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(230, 138, 46, 0.12) 0%, transparent 70%);
   color: var(--text);
   font-family: 'DM Sans', sans-serif;
   min-height: 100vh;
