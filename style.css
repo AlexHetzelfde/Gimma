@@ -472,6 +472,7 @@ body.layout-telefoon #datum-mobiel-balk {
   justify-content: center;
   padding: 3rem 1.5rem;
   gap: 1.75rem;
+  position: relative;
 }
 
 #homescreen.zichtbaar { display: flex; }
