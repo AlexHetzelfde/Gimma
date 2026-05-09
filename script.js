@@ -672,7 +672,7 @@ function updateReaderCatBadge() {
 }
 
 // ════════════════════════════════════════
-// SR REVIEW — één vraag per keer
+// SR REVIEW — één vraag per keer (FLASHCARD)
 // ════════════════════════════════════════
 function toonSRReview(dueItems) {
   const wrap = document.getElementById('sr-review-wrap');
@@ -780,9 +780,7 @@ function toonSRReview(dueItems) {
         id:          item.id,
         vraag:       item.vraag,
         type:        item.type,
-        antwoordData: item.type === 'meerkeuze'
-          ? { opties: item.opties, goed: item.goed }
-          : { antwoord: item.antwoord },
+        antwoordData: { antwoord: item.antwoord || item.goed || '' },
         goed
       });
 
@@ -791,84 +789,46 @@ function toonSRReview(dueItems) {
       setTimeout(() => maakVolgendeKnop(goed), 400);
     }
 
-    if (item.type === 'meerkeuze') {
-      blok.innerHTML = `
-        ${sterkteMeter}
-        <div class="vraag-tekst" style="color:var(--text)">${item.vraag}</div>
-        <div class="opties-grid" id="sr-opties-${index}">
-          ${item.opties.map((opt, oi) =>
-            `<button class="optie-knop" data-oi="${oi}">${opt}</button>`
-          ).join('')}
+    // ── Flashcard rendering voor SR review ──
+    const antwoord = item.antwoord || item.goed || '';
+
+    blok.innerHTML = `
+      ${sterkteMeter}
+      <div class="vraag-tekst" style="color:var(--text)">${item.vraag}</div>
+      <div class="flashcard-onthul-wrap" id="sr-onthul-${index}">
+        <button class="knop-onthul">Tik om het antwoord te zien ↓</button>
+      </div>
+      <div class="flashcard-antwoord-wrap" id="sr-antwoord-${index}" style="display:none">
+        <div class="flashcard-antwoord sr-flashcard-antwoord">${antwoord}</div>
+        <div class="flashcard-goed-fout">
+          <button class="knop-flashcard-fout" id="sr-fout-${index}">✗ Fout</button>
+          <button class="knop-flashcard-goed" id="sr-goed-${index}">✓ Goed</button>
         </div>
-        <div class="feedback" id="sr-feedback-${index}"></div>
-      `;
+      </div>
+    `;
 
-      let beantwoord = false;
-      blok.querySelectorAll('.optie-knop').forEach(knop => {
-        knop.addEventListener('click', function () {
-          if (beantwoord) return;
-          beantwoord = true;
+    let beantwoord = false;
 
-          const gekozen = item.opties[parseInt(this.dataset.oi)];
-          const goed    = gekozen.trim() === item.goed.trim();
+    blok.querySelector('.knop-onthul').addEventListener('click', () => {
+      document.getElementById(`sr-onthul-${index}`).style.display = 'none';
+      document.getElementById(`sr-antwoord-${index}`).style.display = 'block';
+    });
 
-          blok.querySelectorAll('.optie-knop').forEach(k => {
-            k.disabled = true;
-            if (k.textContent.trim() === item.goed.trim()) k.classList.add('gemist');
-          });
-          this.classList.remove('gemist');
-          this.classList.add(goed ? 'goed' : 'fout');
+    blok.querySelector(`#sr-goed-${index}`).addEventListener('click', () => {
+      if (beantwoord) return;
+      beantwoord = true;
+      blok.querySelector(`#sr-goed-${index}`).classList.add('actief-goed');
+      blok.querySelector(`#sr-fout-${index}`).disabled = true;
+      verwerkAntwoord(true);
+    });
 
-          const fb = document.getElementById(`sr-feedback-${index}`);
-          fb.textContent = goed ? '✓ Correct!' : `✗ Het juiste antwoord is: ${item.goed}`;
-          fb.className   = `feedback ${goed ? 'goed' : 'fout'}`;
-          fb.style.color = goed ? 'var(--goed)' : 'var(--fout)';
-
-          verwerkAntwoord(goed);
-        });
-      });
-
-    } else {
-      blok.innerHTML = `
-        ${sterkteMeter}
-        <div class="vraag-tekst" style="color:var(--text)">${item.vraag}</div>
-        <div class="open-invoer-wrap">
-          <input type="text" class="open-invoer" id="sr-open-${index}" placeholder="Jouw antwoord..."/>
-          <button class="open-invoer-knop" id="sr-knop-${index}">Controleer</button>
-        </div>
-        <div class="feedback" id="sr-feedback-${index}"></div>
-      `;
-
-      const invoerEl = blok.querySelector(`#sr-open-${index}`);
-      const knopEl   = blok.querySelector(`#sr-knop-${index}`);
-
-      invoerEl.addEventListener('focus', () => { invoerEl.style.borderColor = itemKleur; });
-      invoerEl.addEventListener('blur',  () => { invoerEl.style.borderColor = ''; });
-
-      let beantwoord = false;
-      const controleer = () => {
-        if (beantwoord) return;
-        const invoer = invoerEl.value.trim();
-        if (!invoer) return;
-        beantwoord = true;
-
-        const goed = isGoedAntwoord(invoer, item.antwoord);
-        invoerEl.disabled = true;
-        invoerEl.classList.add(goed ? 'goed' : 'fout');
-        knopEl.disabled = true;
-
-        const fb = document.getElementById(`sr-feedback-${index}`);
-        fb.textContent = goed ? '✓ Correct!' : `✗ Het antwoord was: ${item.antwoord}`;
-        fb.className   = `feedback ${goed ? 'goed' : 'fout'}`;
-        fb.style.color = goed ? 'var(--goed)' : 'var(--fout)';
-
-        verwerkAntwoord(goed);
-      };
-
-      invoerEl.addEventListener('keydown', e => { if (e.key === 'Enter') controleer(); });
-      knopEl.addEventListener('click', controleer);
-      setTimeout(() => invoerEl.focus(), 80);
-    }
+    blok.querySelector(`#sr-fout-${index}`).addEventListener('click', () => {
+      if (beantwoord) return;
+      beantwoord = true;
+      blok.querySelector(`#sr-fout-${index}`).classList.add('actief-fout');
+      blok.querySelector(`#sr-goed-${index}`).disabled = true;
+      verwerkAntwoord(false);
+    });
 
     inhoud.appendChild(blok);
   }
@@ -1268,6 +1228,9 @@ ${ingekorte}`;
   return resultaat;
 }
 
+// ════════════════════════════════════════
+// GEMINI — FLASHCARD VRAGEN GENEREREN
+// ════════════════════════════════════════
 async function maakVragenMetGemini(titel, secties) {
   const key = await haalKey();
 
@@ -1277,32 +1240,27 @@ async function maakVragenMetGemini(titel, secties) {
     tekst:  s.tekst
   }));
 
-  const prompt = `Je bent een professionele toetsenmaker. Hieronder staat een herschreven Nederlandstalige les over "${titel}", verdeeld in secties. Maak per sectie 2 à 3 vragen.
+  const prompt = `Je bent een professionele toetsenmaker. Hieronder staat een herschreven Nederlandstalige les over "${titel}", verdeeld in secties. Maak per sectie 2 à 3 flashcard-vragen.
 
 TAAL: Alle vragen en antwoorden moeten in het Nederlands zijn.
 
-VRAGENREGELS — lees deze zorgvuldig:
+FLASHCARD VRAGENREGELS — lees deze zorgvuldig:
 
 ALGEMEEN:
 - Elke vraag moet zelfstandig begrijpelijk zijn, ook zonder de lestekst erbij
 - Toets bij voorkeur verbanden, oorzaken, gevolgen en betekenis — niet alleen losse feiten
 - Minstens de helft van alle vragen moet gaan over waarom iets zo is, waardoor iets gebeurde, wat het gevolg was, of wat het verband is tussen twee concepten
 
-MEERKEUZE:
-- Exact 4 opties per vraag, precies 1 goed antwoord
-- De waarde van "goed" moet EXACT overeenkomen met één van de opties — zelfde tekst, zelfde hoofdletters, geen extra spaties
-- Afleidopties zijn plausibel en niet makkelijk te elimineren
-
-OPEN VRAGEN — strikte regels:
-- Het antwoord is een specifiek begrip, naam, getal of herkenbare korte zin (1-5 woorden)
-- Het antwoord moet ZELFSTANDIG BETEKENISVOL zijn: iemand die alleen het antwoord leest begrijpt wat er bedoeld wordt
-- VERBODEN als antwoord: losse bijvoeglijk naamwoorden ("oude", "grote", "nieuwe", "eerste"), vage losse fragmenten, woorden die alleen in context betekenis hebben
-- VERBODEN vraagvormen: invulvragen ("welk woord ontbreekt?"), vragen waarbij het antwoord een losse woordfragment uit een zin is
-- Goed voorbeeld → vraag: "Wie ontdekte de penicilline?" antwoord: "Alexander Fleming"
-- Goed voorbeeld → vraag: "In welk jaar brak de Eerste Wereldoorlog uit?" antwoord: "1914"
-- Goed voorbeeld → vraag: "Welke organisatie stelt de officiële spellingregels voor het Nederlands vast?" antwoord: "Taalunie"
-- FOUT voorbeeld → vraag: "Welke samenleving werd bekritiseerd?" antwoord: "oude" ← DIT IS VERBODEN
-- FOUT voorbeeld → vraag: "Welk land was het grootst?" antwoord: "Russische" ← DIT IS VERBODEN
+FLASHCARD REGELS:
+- De vraag is helder en specifiek
+- Het antwoord is een volledige, zelfstandig begrijpelijke zin of frase (1–20 woorden)
+- Het antwoord legt de kern van de vraag volledig uit — geen losse woorden zonder context
+- VERBODEN als antwoord: losse bijvoeglijk naamwoorden ("oude", "grote"), vage losse fragmenten, woorden die alleen in context betekenis hebben
+- Goed voorbeeld → vraag: "Wie ontdekte de penicilline, en wanneer?" antwoord: "Alexander Fleming ontdekte het in 1928 per toeval in zijn laboratorium"
+- Goed voorbeeld → vraag: "Wat was de belangrijkste oorzaak van de Eerste Wereldoorlog?" antwoord: "De moord op Franz Ferdinand en de escalerende bondgenootschappen in Europa"
+- Goed voorbeeld → vraag: "Welke organisatie stelt de officiële spellingregels voor het Nederlands vast?" antwoord: "De Taalunie, een samenwerkingsverband van Nederland en België"
+- FOUT voorbeeld → antwoord: "oude" ← DIT IS VERBODEN
+- FOUT voorbeeld → antwoord: "het Russische" ← DIT IS VERBODEN
 
 GEEF JE ANTWOORD UITSLUITEND ALS GELDIGE JSON — geen uitleg, geen markdown, geen backticks.
 Geef exact evenveel secties terug als je hebt ontvangen, in dezelfde volgorde.
@@ -1312,15 +1270,9 @@ Geef exact evenveel secties terug als je hebt ontvangen, in dezelfde volgorde.
     {
       "vragen": [
         {
-          "type": "meerkeuze",
+          "type": "flashcard",
           "vraag": "De vraag?",
-          "opties": ["Optie A", "Optie B", "Optie C", "Optie D"],
-          "goed": "Optie A"
-        },
-        {
-          "type": "open",
-          "vraag": "De vraag?",
-          "antwoord": "kort antwoord"
+          "antwoord": "Het volledige antwoord in maximaal 20 woorden"
         }
       ]
     }
@@ -1627,7 +1579,8 @@ function toonVraag(vi) {
   document.getElementById('terug-naar-vraag-balk').style.display  = 'none';
   document.getElementById('vragen-sectie').style.display          = 'block';
 
-  document.getElementById('knop-weetniets').style.display = 'inline-flex';
+  // Weet-niet knop verborgen — flashcard heeft eigen Fout-knop
+  document.getElementById('knop-weetniets').style.display = 'none';
   document.getElementById('knop-kijkop').style.display   = 'inline-flex';
 
   const knopVolgende = document.getElementById('knop-volgende');
@@ -1669,15 +1622,12 @@ function toonVraag(vi) {
     registreerAntwoord({
       id:          vraagId,
       vraag:       vraag.vraag,
-      type:        vraag.type,
-      antwoordData: vraag.type === 'meerkeuze'
-        ? { opties: vraag.opties, goed: vraag.goed }
-        : { antwoord: vraag.antwoord },
+      type:        vraag.type || 'flashcard',
+      antwoordData: { antwoord: vraag.antwoord || vraag.goed || '' },
       goed
     });
 
-    document.getElementById('knop-weetniets').style.display = 'none';
-    document.getElementById('knop-kijkop').style.display   = 'none';
+    document.getElementById('knop-kijkop').style.display = 'none';
     knopVolgende.disabled = false;
 
     slaVoortgangOp({
@@ -1692,75 +1642,47 @@ function toonVraag(vi) {
     renderShields();
 
     setTimeout(() => {
-      const fb = blok.querySelector('.feedback');
-      if (fb) fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      const fc = blok.querySelector('.flashcard-antwoord-wrap');
+      if (fc) fc.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 120);
   }
 
-  if (vraag.type === 'meerkeuze') {
-    blok.innerHTML = `
-      <div class="vraag-tekst">${vraag.vraag}</div>
-      <div class="opties-grid" id="opties-0">
-        ${vraag.opties.map((opt, oi) =>
-          `<button class="optie-knop" data-oi="${oi}">${opt}</button>`
-        ).join('')}
+  // ── Flashcard rendering ──
+  const antwoord = vraag.antwoord || vraag.goed || '';
+
+  blok.innerHTML = `
+    <div class="vraag-tekst">${vraag.vraag}</div>
+    <div class="flashcard-onthul-wrap" id="fc-onthul-wrap">
+      <button class="knop-onthul">Tik om het antwoord te zien ↓</button>
+    </div>
+    <div class="flashcard-antwoord-wrap" id="fc-antwoord-wrap" style="display:none">
+      <div class="flashcard-antwoord">${antwoord}</div>
+      <div class="flashcard-goed-fout">
+        <button class="knop-flashcard-fout" id="fc-fout">✗ Fout</button>
+        <button class="knop-flashcard-goed" id="fc-goed">✓ Goed</button>
       </div>
-      <div class="feedback" id="feedback-0"></div>
-    `;
-    blok.querySelectorAll('.optie-knop').forEach(knop => {
-      knop.addEventListener('click', function () {
-        if (beantwoord) return;
-        const gekozen = vraag.opties[parseInt(this.dataset.oi)];
-        const goed    = gekozen.trim() === vraag.goed.trim();
+    </div>
+  `;
 
-        blok.querySelectorAll('.optie-knop').forEach(k => {
-          k.disabled = true;
-          if (k.textContent.trim() === vraag.goed.trim()) k.classList.add('gemist');
-        });
-        this.classList.remove('gemist');
-        this.classList.add(goed ? 'goed' : 'fout');
+  blok.querySelector('.knop-onthul').addEventListener('click', () => {
+    document.getElementById('fc-onthul-wrap').style.display = 'none';
+    document.getElementById('fc-antwoord-wrap').style.display = 'block';
+    document.getElementById('knop-kijkop').style.display = 'none';
+  });
 
-        const fb = document.getElementById('feedback-0');
-        fb.textContent = goed ? '✓ Correct!' : `✗ Het juiste antwoord is: ${vraag.goed}`;
-        fb.className   = `feedback ${goed ? 'goed' : 'fout'}`;
+  blok.querySelector('#fc-goed').addEventListener('click', () => {
+    if (beantwoord) return;
+    blok.querySelector('#fc-goed').classList.add('actief-goed');
+    blok.querySelector('#fc-fout').disabled = true;
+    onAntwoord(true);
+  });
 
-        onAntwoord(goed);
-      });
-    });
-
-  } else {
-    blok.innerHTML = `
-      <div class="vraag-tekst">${vraag.vraag}</div>
-      <div class="open-invoer-wrap">
-        <input type="text" class="open-invoer" id="open-invoer-0" placeholder="Jouw antwoord..."/>
-        <button class="open-invoer-knop" id="open-knop-0">Controleer</button>
-      </div>
-      <div class="feedback" id="feedback-0"></div>
-    `;
-    const invoerEl = blok.querySelector('#open-invoer-0');
-    const knopEl   = blok.querySelector('#open-knop-0');
-
-    const controleer = () => {
-      if (beantwoord) return;
-      const invoer = invoerEl.value.trim();
-      if (!invoer) return;
-
-      const goed = isGoedAntwoord(invoer, vraag.antwoord);
-      invoerEl.disabled = true;
-      invoerEl.classList.add(goed ? 'goed' : 'fout');
-      knopEl.disabled = true;
-
-      const fb = document.getElementById('feedback-0');
-      fb.textContent = goed ? '✓ Correct!' : `✗ Het antwoord was: ${vraag.antwoord}`;
-      fb.className   = `feedback ${goed ? 'goed' : 'fout'}`;
-
-      onAntwoord(goed);
-    };
-
-    invoerEl.addEventListener('keydown', e => { if (e.key === 'Enter') controleer(); });
-    knopEl.addEventListener('click', controleer);
-    setTimeout(() => invoerEl.focus(), 80);
-  }
+  blok.querySelector('#fc-fout').addEventListener('click', () => {
+    if (beantwoord) return;
+    blok.querySelector('#fc-fout').classList.add('actief-fout');
+    blok.querySelector('#fc-goed').disabled = true;
+    onAntwoord(false);
+  });
 
   inhoud.appendChild(blok);
   renderShields();
@@ -1810,102 +1732,6 @@ function terugNaarVraag() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function markeerHuidigeVraagFout() {
-  const sectie  = lesData.secties[huidigeSectie];
-  const vraag   = sectie.vragen[huidigeVraag];
-  const vraagId = maakVraagId(artikelTitel, huidigeSectie, huidigeVraag);
-
-  if (vraag.type === 'meerkeuze') {
-    const opties = document.querySelectorAll('#opties-0 .optie-knop');
-    opties.forEach(k => {
-      k.disabled = true;
-      if (k.textContent.trim() === vraag.goed.trim()) k.classList.add('goed');
-    });
-    const fb = document.getElementById('feedback-0');
-    if (fb) {
-      fb.textContent = `✗ Het juiste antwoord is: ${vraag.goed}`;
-      fb.className   = 'feedback fout';
-    }
-  } else {
-    const invoerEl = document.getElementById('open-invoer-0');
-    const knopEl   = document.getElementById('open-knop-0');
-    if (invoerEl) { invoerEl.disabled = true; invoerEl.classList.add('fout'); }
-    if (knopEl) knopEl.disabled = true;
-    const fb = document.getElementById('feedback-0');
-    if (fb) {
-      fb.textContent = `✗ Het antwoord was: ${vraag.antwoord}`;
-      fb.className   = 'feedback fout';
-    }
-  }
-
-  vraagResultaten[vraagId] = 'fout';
-  sessieAntwoorden.push({
-    sectieIndex: huidigeSectie,
-    vraagIndex:  huidigeVraag,
-    id:          vraagId,
-    goed:        false
-  });
-  registreerAntwoord({
-    id:          vraagId,
-    vraag:       vraag.vraag,
-    type:        vraag.type,
-    antwoordData: vraag.type === 'meerkeuze'
-      ? { opties: vraag.opties, goed: vraag.goed }
-      : { antwoord: vraag.antwoord },
-    goed: false
-  });
-
-  document.getElementById('knop-weetniets').style.display = 'none';
-  document.getElementById('knop-kijkop').style.display   = 'none';
-  document.getElementById('knop-volgende').disabled       = false;
-
-  slaVoortgangOp({
-    sectieIndex: huidigeSectie,
-    vraagIndex:  huidigeVraag,
-    inVragen:    true,
-    voltooid:    false,
-    titel:       artikelTitel,
-    vraagResultaten: vraagResultaten
-  });
-
-  renderShields();
-}
-
-// ── Fuzzy matching ──
-function levenshtein(a, b) {
-  const m = a.length, n = b.length;
-  const d = Array.from({ length: m + 1 }, (_, i) =>
-    Array.from({ length: n + 1 }, (_, j) => i === 0 ? j : j === 0 ? i : 0)
-  );
-  for (let i = 1; i <= m; i++)
-    for (let j = 1; j <= n; j++)
-      d[i][j] = a[i-1] === b[j-1] ? d[i-1][j-1]
-        : 1 + Math.min(d[i-1][j], d[i][j-1], d[i-1][j-1]);
-  return d[m][n];
-}
-
-const GETALLEN = {
-  'nul':0,'een':1,'twee':2,'drie':3,'vier':4,'vijf':5,
-  'zes':6,'zeven':7,'acht':8,'negen':9,'tien':10,'elf':11,
-  'twaalf':12,'dertien':13,'veertien':14,'vijftien':15,'zestien':16,
-  'zeventien':17,'achttien':18,'negentien':19,'twintig':20,
-  'dertig':30,'veertig':40,'vijftig':50,'zestig':60,
-  'zeventig':70,'tachtig':80,'negentig':90,'honderd':100
-};
-
-function normaliseerGetal(s) {
-  const t = s.toLowerCase().trim();
-  return t in GETALLEN ? String(GETALLEN[t]) : t;
-}
-
-function isGoedAntwoord(invoer, verwacht) {
-  const a = normaliseerGetal(invoer);
-  const b = normaliseerGetal(verwacht);
-  if (a === b) return true;
-  const maxFout = b.length <= 4 ? 1 : 2;
-  return levenshtein(a, b) <= maxFout;
-}
-
 // ── Volgende sectie ──
 function volgendeSectie() {
   huidigeSectie++;
@@ -1918,7 +1744,7 @@ function volgendeSectie() {
 }
 
 // ════════════════════════════════════════
-// HERHALING
+// HERHALING (FLASHCARD)
 // ════════════════════════════════════════
 let herhalingsWachtrij = [];
 
@@ -1994,74 +1820,45 @@ function toonHerhalingsRonde() {
   }
 
   herhalingsWachtrij.forEach((item, hi) => {
-    const vraag = item.vraagData;
-    const blok  = document.createElement('div');
+    const vraag   = item.vraagData;
+    const antwoord = vraag.antwoord || vraag.goed || '';
+    const blok    = document.createElement('div');
     blok.className = 'vraag-blok';
 
-    if (vraag.type === 'meerkeuze') {
-      blok.innerHTML = `
-        <div class="vraag-tekst">${hi + 1}. ${vraag.vraag}</div>
-        <div class="opties-grid" id="h-opties-${hi}">
-          ${vraag.opties.map((opt, oi) =>
-            `<button class="optie-knop" data-oi="${oi}">${opt}</button>`
-          ).join('')}
+    blok.innerHTML = `
+      <div class="vraag-tekst">${hi + 1}. ${vraag.vraag}</div>
+      <div class="flashcard-onthul-wrap" id="h-onthul-${hi}">
+        <button class="knop-onthul">Tik om het antwoord te zien ↓</button>
+      </div>
+      <div class="flashcard-antwoord-wrap" id="h-antwoord-${hi}" style="display:none">
+        <div class="flashcard-antwoord">${antwoord}</div>
+        <div class="flashcard-goed-fout">
+          <button class="knop-flashcard-fout" id="h-fout-${hi}">✗ Fout</button>
+          <button class="knop-flashcard-goed" id="h-goed-${hi}">✓ Goed</button>
         </div>
-        <div class="feedback" id="h-feedback-${hi}"></div>
-      `;
-      blok.querySelectorAll('.optie-knop').forEach(knop => {
-        knop.addEventListener('click', function () {
-          if (rondeResultaten[hi].beantwoord) return;
-          const gekozen = vraag.opties[parseInt(this.dataset.oi)];
-          const goed    = gekozen.trim() === vraag.goed.trim();
+      </div>
+    `;
 
-          blok.querySelectorAll('.optie-knop').forEach(k => {
-            k.disabled = true;
-            if (k.textContent.trim() === vraag.goed.trim()) k.classList.add('gemist');
-          });
-          this.classList.remove('gemist');
-          this.classList.add(goed ? 'goed' : 'fout');
+    blok.querySelector('.knop-onthul').addEventListener('click', () => {
+      document.getElementById(`h-onthul-${hi}`).style.display = 'none';
+      document.getElementById(`h-antwoord-${hi}`).style.display = 'block';
+    });
 
-          const fb = document.getElementById(`h-feedback-${hi}`);
-          fb.textContent = goed ? '✓ Correct!' : `✗ Het juiste antwoord is: ${vraag.goed}`;
-          fb.className   = `feedback ${goed ? 'goed' : 'fout'}`;
+    blok.querySelector(`#h-goed-${hi}`).addEventListener('click', () => {
+      if (rondeResultaten[hi].beantwoord) return;
+      blok.querySelector(`#h-goed-${hi}`).classList.add('actief-goed');
+      blok.querySelector(`#h-fout-${hi}`).disabled = true;
+      rondeResultaten[hi] = { beantwoord: true, goed: true };
+      checkAllesHerhaling();
+    });
 
-          rondeResultaten[hi] = { beantwoord: true, goed };
-          checkAllesHerhaling();
-        });
-      });
-    } else {
-      blok.innerHTML = `
-        <div class="vraag-tekst">${hi + 1}. ${vraag.vraag}</div>
-        <div class="open-invoer-wrap">
-          <input type="text" class="open-invoer" id="h-open-invoer-${hi}" placeholder="Jouw antwoord..."/>
-          <button class="open-invoer-knop" id="h-open-knop-${hi}">Controleer</button>
-        </div>
-        <div class="feedback" id="h-feedback-${hi}"></div>
-      `;
-      const invoerEl = blok.querySelector(`#h-open-invoer-${hi}`);
-      const knopEl   = blok.querySelector(`#h-open-knop-${hi}`);
-
-      const controleer = () => {
-        if (rondeResultaten[hi].beantwoord) return;
-        const invoer = invoerEl.value.trim();
-        if (!invoer) return;
-
-        const goed = isGoedAntwoord(invoer, vraag.antwoord);
-        invoerEl.disabled = true;
-        invoerEl.classList.add(goed ? 'goed' : 'fout');
-        knopEl.disabled = true;
-
-        const fb = document.getElementById(`h-feedback-${hi}`);
-        fb.textContent = goed ? '✓ Correct!' : `✗ Het antwoord was: ${vraag.antwoord}`;
-        fb.className   = `feedback ${goed ? 'goed' : 'fout'}`;
-
-        rondeResultaten[hi] = { beantwoord: true, goed };
-        checkAllesHerhaling();
-      };
-
-      invoerEl.addEventListener('keydown', e => { if (e.key === 'Enter') controleer(); });
-      knopEl.addEventListener('click', controleer);
-    }
+    blok.querySelector(`#h-fout-${hi}`).addEventListener('click', () => {
+      if (rondeResultaten[hi].beantwoord) return;
+      blok.querySelector(`#h-fout-${hi}`).classList.add('actief-fout');
+      blok.querySelector(`#h-goed-${hi}`).disabled = true;
+      rondeResultaten[hi] = { beantwoord: true, goed: false };
+      checkAllesHerhaling();
+    });
 
     inhoud.appendChild(blok);
   });
