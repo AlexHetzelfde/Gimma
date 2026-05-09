@@ -262,6 +262,8 @@ function herstelLayout() {
 // TOAST
 // ════════════════════════════════════════
 let toastTimer = null;
+let pendingSR = [];            // items die aan het eind van de les nog herhaald moeten worden
+let smartActive = false;       // vlag voor smart session loop
 
 function toonToast(tekst, duur = 2500) {
   const el = document.getElementById('toast');
@@ -590,10 +592,10 @@ async function toonHomescreen() {
 
   const cache     = await haalGecachedeLes();
   const voortgang = await haalVoortgang();
-  const knopLes   = document.getElementById('knop-les');
-  const melding   = document.getElementById('cache-melding');
-  const chip      = document.getElementById('categorie-chip');
+  const dueItems  = await getDueItems();
 
+  // Categorie‑chip
+  const chip = document.getElementById('categorie-chip');
   if (cache && cache.categorieKleur) {
     huidigeCategorieKleur = cache.categorieKleur;
     huidigeCategorieNaam  = cache.categorie || '';
@@ -605,40 +607,101 @@ async function toonHomescreen() {
     chip.style.display = 'none';
   }
 
-  if (!cache) {
-    knopLes.textContent   = 'Maak les van vandaag';
-    knopLes.onclick       = maakLes;
-    knopLes.style.display = '';
-  } else if (voortgang && voortgang.voltooid) {
-    knopLes.innerHTML     = 'Les van vandaag al gemaakt <span class="hervatten-badge">✓ voltooid</span>';
-    knopLes.onclick       = toonAlGemaaktModal;
-    knopLes.style.display = '';
-    melding.textContent   = `✓ Klaar met "${cache.titel}"`;
-    melding.style.display = 'block';
-  } else if (voortgang && !voortgang.voltooid) {
-    const sectieTekst     = `sectie ${voortgang.sectieIndex + 1}${voortgang.inVragen ? `, vraag ${(voortgang.vraagIndex || 0) + 1}` : ''}`;
-    knopLes.innerHTML     = `Les hervatten <span class="hervatten-badge">bij ${sectieTekst}</span>`;
-    knopLes.onclick       = maakLes;
-    knopLes.style.display = '';
-    melding.textContent   = `Bezig met "${cache.titel}"`;
-    melding.style.display = 'block';
+  // Bepaal statussen
+  const lesVoltooid = voortgang && voortgang.voltooid;
+  const heeftCache = !!cache;
+  const heeftDue = dueItems.length > 0;
+
+  // Knoppen wrapper zichtbaar
+  document.getElementById('home-knoppen-wrap').style.display = 'flex';
+
+  // ── SMART SESSION ──
+  const smartBtn = document.getElementById('knop-smart');
+  const smartSub = document.getElementById('smart-sub');
+  if (!heeftDue && (lesVoltooid || !heeftCache)) {
+    // Niks te doen
+    smartBtn.disabled = true;
+    smartBtn.setAttribute('data-tip', 'Alles is al gedaan vandaag');
+    smartSub.textContent = 'Je bent helemaal bij! 🎉';
   } else {
-    knopLes.textContent   = `Les van vandaag hervatten`;
-    knopLes.onclick       = maakLes;
-    knopLes.style.display = '';
-    melding.textContent   = `✓ Les van vandaag staat klaar — "${cache.titel}"`;
-    melding.style.display = 'block';
+    smartBtn.disabled = false;
+    smartBtn.removeAttribute('data-tip');
+    const delen = [];
+    if (heeftDue) delen.push(`${dueItems.length} herhaling${dueItems.length>1?'en':''}`);
+    if (!lesVoltooid) delen.push('les van vandaag');
+    smartSub.textContent = delen.join(' + ');
   }
 
-  const dueItems = await getDueItems();
-  if (dueItems.length > 0) {
-    toonSRReview(dueItems);
-    knopLes.style.display = 'none';
-    melding.style.display = 'none';
-    chip.style.display    = 'none';
+  // ── VAULT PRACTICE ──
+  const vaultBtn = document.getElementById('knop-vault');
+  const vaultSub = document.getElementById('vault-sub');
+  if (!heeftDue) {
+    vaultBtn.disabled = true;
+    vaultBtn.setAttribute('data-tip', 'Alles bij! Geen herhalingen nodig');
+    vaultSub.textContent = 'Je kluis is leeg';
+  } else {
+    vaultBtn.disabled = false;
+    vaultBtn.removeAttribute('data-tip');
+    vaultSub.textContent = `${dueItems.length} vraag${dueItems.length>1?'en':''} klaar voor herhaling`;
   }
+
+  // ── LES VAN DE DAG ──
+  const lesBtn = document.getElementById('knop-les-nieuw');
+  const lesSub = document.getElementById('les-sub');
+  if (lesVoltooid) {
+    lesBtn.disabled = false;
+    lesBtn.onclick = toonAlGemaaktModal;
+    lesSub.textContent = 'Al voltooid — bekijk/opnieuw';
+  } else if (!heeftCache) {
+    lesBtn.disabled = false;
+    lesBtn.onclick = startLesVanVandaag;
+    lesSub.textContent = 'Nieuwe les genereren';
+  } else if (voortgang && !voortgang.voltooid) {
+    const sectieTekst = `sectie ${voortgang.sectieIndex + 1}${voortgang.inVragen ? `, vraag ${(voortgang.vraagIndex || 0) + 1}` : ''}`;
+    lesBtn.disabled = false;
+    lesBtn.onclick = startLesVanVandaag;
+    lesSub.textContent = `Hervatten bij ${sectieTekst}`;
+  } else {
+    lesBtn.disabled = false;
+    lesBtn.onclick = startLesVanVandaag;
+    lesSub.textContent = 'Les staat klaar';
+  }
+
+  // Oude elementen verbergen (fallback)
+  document.getElementById('knop-les').style.display = 'none';
+  document.getElementById('cache-melding').style.display = 'none';
 
   await renderCategorieOverzicht();
+}
+
+// ═══ SMART SESSION ═══
+async function startSmartSession() {
+  const dueItems = await getDueItems();
+  const voortgang = await haalVoortgang();
+  const lesVoltooid = voortgang && voortgang.voltooid;
+  
+  if (dueItems.length > 0) {
+    smartActive = true;
+    toonSRReview(dueItems);
+  } else if (!lesVoltooid) {
+    await maakLes();
+  }
+}
+
+// ═══ VAULT PRACTICE ═══
+async function startVaultPractice() {
+  const dueItems = await getDueItems();
+  if (dueItems.length > 0) {
+    smartActive = false;
+    toonSRReview(dueItems);
+  }
+}
+
+// ═══ LES VAN DE DAG starten met SR aan het eind ═══
+async function startLesVanVandaag() {
+  const dueItems = await getDueItems();
+  pendingSR = dueItems.length > 0 ? dueItems : [];
+  await maakLes();
 }
 
 // ════════════════════════════════════════
@@ -916,42 +979,22 @@ async function afrondSRReview() {
   await markSessionDone();
   document.getElementById('sr-review-wrap').style.display = 'none';
 
-  const cache     = await haalGecachedeLes();
-  const voortgang = await haalVoortgang();
-  const knopLes   = document.getElementById('knop-les');
-  const melding   = document.getElementById('cache-melding');
-  const chip      = document.getElementById('categorie-chip');
-
-  if (cache && cache.categorieKleur) {
-    pasCategorieKleurToe(cache.categorieKleur);
-    document.getElementById('categorie-dot').style.background = cache.categorieKleur;
-    document.getElementById('categorie-naam-tekst').textContent = cache.categorie || '';
-    chip.style.display = '';
+  // Als we in een smart session zitten, start dan de les
+  if (smartActive) {
+    smartActive = false;
+    const lesVoltooid = (await haalVoortgang())?.voltooid;
+    if (!lesVoltooid) {
+      await maakLes();
+      return;
+    }
+    // anders terug naar home
+    await toonHomescreen();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
   }
 
-  if (!cache) {
-    knopLes.textContent = 'Maak les van vandaag';
-    knopLes.onclick     = maakLes;
-  } else if (voortgang && voortgang.voltooid) {
-    knopLes.innerHTML   = 'Les van vandaag al gemaakt <span class="hervatten-badge">✓ voltooid</span>';
-    knopLes.onclick     = toonAlGemaaktModal;
-    melding.textContent = `✓ Klaar met "${cache.titel}"`;
-    melding.style.display = 'block';
-  } else if (voortgang && !voortgang.voltooid) {
-    const sectieTekst   = `sectie ${voortgang.sectieIndex + 1}${voortgang.inVragen ? `, vraag ${(voortgang.vraagIndex || 0) + 1}` : ''}`;
-    knopLes.innerHTML   = `Les hervatten <span class="hervatten-badge">bij ${sectieTekst}</span>`;
-    knopLes.onclick     = maakLes;
-    melding.textContent = `Bezig met "${cache.titel}"`;
-    melding.style.display = 'block';
-  } else {
-    knopLes.textContent = 'Les van vandaag hervatten';
-    knopLes.onclick     = maakLes;
-    melding.textContent = `✓ Les van vandaag staat klaar — "${cache.titel}"`;
-    melding.style.display = 'block';
-  }
-
-  knopLes.style.display = '';
-  await renderCategorieOverzicht();
+  // Normale vault practice of einde-les SR: terug naar home
+  await toonHomescreen();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -2083,6 +2126,23 @@ function toonHerhalingsRonde() {
 }
 
 function toonKlaarScherm() {
+  if (pendingSR && pendingSR.length > 0) {
+    const items = pendingSR;
+    pendingSR = [];
+    smartActive = false;
+    // Tijdelijk afrondSRReview overschrijven zodat na SR het klaarscherm komt
+    const origAfrond = afrondSRReview;
+    afrondSRReview = async () => {
+      afrondSRReview = origAfrond; // herstel
+      toonKlaarSchermFinal();      // nu echt klaar
+    };
+    toonSRReview(items);
+    return;
+  }
+  toonKlaarSchermFinal();
+}
+
+function toonKlaarSchermFinal() {
   document.getElementById('les-scherm').classList.remove('zichtbaar');
   document.getElementById('shields-balk').style.display = 'none';
 
@@ -2110,6 +2170,8 @@ function toonKlaarScherm() {
   slaVoortgangOp({ sectieIndex: lesData.secties.length - 1, voltooid: true, titel: artikelTitel });
   markSessionDone();
 }
+
+
 
 // ════════════════════════════════════════
 // START — async bootstrap
