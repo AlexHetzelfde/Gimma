@@ -679,53 +679,39 @@ function toonSRReview(dueItems) {
   const wrap = document.getElementById('sr-review-wrap');
   wrap.style.display = 'block';
 
-  // Houdt bij hoeveel rondes we al hebben gedraaid
-  let rondeNummer  = 1;
-  // De huidige wachtrij (begint met alle due items, daarna alleen de foute)
+  let rondeNummer = 1;
   let rondeWachtrij = [...dueItems];
-  // Resultaten van de huidige ronde
   let rondeResultaten = [];
 
   const inhoud = document.getElementById('sr-vragen-inhoud');
   inhoud.innerHTML = '';
 
-  // ── Update de subtitel ──
   function updateSubTitel(huidigeIndex) {
     const rondeLabel = rondeNummer > 1 ? ` · ronde ${rondeNummer}` : '';
     document.getElementById('sr-review-sub').textContent =
       `Vraag ${huidigeIndex + 1} van ${rondeWachtrij.length}${rondeLabel}`;
   }
 
-  // ── Start een nieuwe ronde ──
   function startRonde() {
     rondeResultaten = new Array(rondeWachtrij.length).fill(null);
     toonSRVraag(0);
   }
 
-  // ── Einde van een ronde: check of alles goed is ──
   function toonSREinde() {
     inhoud.innerHTML = '';
-
-    const fouteItems = rondeWachtrij.filter((_, i) =>
-      rondeResultaten[i] && !rondeResultaten[i].goed
-    );
+    const fouteItems = rondeWachtrij.filter((_, i) => rondeResultaten[i] && !rondeResultaten[i].goed);
 
     if (fouteItems.length > 0) {
-      // ── Niet alles goed: volgende ronde met alleen de foute ──
       rondeWachtrij = fouteItems;
       rondeNummer++;
-
       document.getElementById('sr-review-sub').textContent =
         `${fouteItems.length} vraag${fouteItems.length !== 1 ? 'en' : ''} nog fout · ronde ${rondeNummer}`;
 
-      // Tussenscherm: uitleg + knop voor volgende ronde
       const melding = document.createElement('div');
-      melding.style.cssText =
-        'text-align:center;padding:2rem 1rem 1.5rem;';
+      melding.style.cssText = 'text-align:center;padding:2rem 1rem 1.5rem;';
       melding.innerHTML = `
         <div style="font-size:2rem;margin-bottom:0.65rem;line-height:1">🔁</div>
-        <div style="font-family:'Lora',serif;font-size:1.05rem;font-weight:600;
-                    color:var(--text);margin-bottom:0.4rem;">
+        <div style="font-family:'Lora',serif;font-size:1.05rem;font-weight:600;color:var(--text);margin-bottom:0.4rem;">
           Nog niet helemaal goed
         </div>
         <div style="font-size:0.87rem;color:var(--muted);line-height:1.6;max-width:320px;margin:0 auto 1.5rem;">
@@ -735,9 +721,8 @@ function toonSRReview(dueItems) {
         </div>
       `;
       inhoud.appendChild(melding);
-
       const knopOpnieuw = document.createElement('button');
-      knopOpnieuw.className   = 'knop-primair';
+      knopOpnieuw.className = 'knop-primair';
       knopOpnieuw.style.cssText = 'width:100%;';
       knopOpnieuw.textContent = `Opnieuw oefenen (${fouteItems.length}) →`;
       knopOpnieuw.addEventListener('click', () => {
@@ -745,29 +730,21 @@ function toonSRReview(dueItems) {
         startRonde();
       });
       inhoud.appendChild(knopOpnieuw);
-
       window.scrollTo({ top: wrap.offsetTop - 40, behavior: 'smooth' });
-
     } else {
-      // ── Alles goed: toon succesmelding + "Doorgaan naar les" ──
       document.getElementById('sr-review-sub').textContent = 'Alles goed! 🎉';
-
       const scoreEl = document.getElementById('sr-score-tekst');
       if (rondeNummer === 1) {
-        scoreEl.innerHTML =
-          `<strong>Alles in één ronde goed!</strong> Knap gedaan. 🎉`;
+        scoreEl.innerHTML = `<strong>Alles in één ronde goed!</strong> Knap gedaan. 🎉`;
       } else {
-        scoreEl.innerHTML =
-          `<strong>Alles onthouden!</strong> Na ${rondeNummer} rondes alles goed. 💪`;
+        scoreEl.innerHTML = `<strong>Alles onthouden!</strong> Na ${rondeNummer} rondes alles goed. 💪`;
       }
-
       const klaarBalk = document.getElementById('sr-klaar-balk');
       klaarBalk.style.display = 'flex';
       window.scrollTo({ top: wrap.offsetTop - 40, behavior: 'smooth' });
     }
   }
 
-  // ── Toon één SR-vraag ──
   function toonSRVraag(index) {
     if (index >= rondeWachtrij.length) {
       toonSREinde();
@@ -778,20 +755,21 @@ function toonSRReview(dueItems) {
     inhoud.innerHTML = '';
     window.scrollTo({ top: wrap.offsetTop - 40, behavior: 'smooth' });
 
-    const item      = rondeWachtrij[index];
-    const itemKleur = item.categorieKleur || '#c8a96e';
-    const itemRgb   = hexNaarRgb(itemKleur);
+    const item = rondeWachtrij[index];
+    const itemKleur = item.categorieKleur || '#e68a2e';
+    const itemRgb = hexNaarRgb(itemKleur);
+    const vraagType = item.type || 'flashcard';
 
     const blok = document.createElement('div');
     blok.className = 'vraag-blok';
-    blok.style.background   = `rgba(${itemRgb}, 0.08)`;
-    blok.style.border       = `1px solid rgba(${itemRgb}, 0.25)`;
+    blok.style.background = `rgba(${itemRgb}, 0.08)`;
+    blok.style.border = `1px solid rgba(${itemRgb}, 0.25)`;
     blok.style.borderRadius = '8px';
-    blok.style.padding      = '1.1rem 1.2rem';
+    blok.style.padding = '1.1rem 1.2rem';
     blok.style.marginBottom = '0';
 
-    const strength   = item.strength ?? 20;
-    const kleur      = sterktekleur(strength);
+    const strength = item.strength ?? 20;
+    const kleur = sterktekleur(strength);
     const catTagHtml = item.categorieNaam
       ? `<span class="sr-cat-tag" style="background:rgba(${itemRgb},0.15);color:${itemKleur}">● ${item.categorieNaam}</span>`
       : '';
@@ -806,87 +784,131 @@ function toonSRReview(dueItems) {
         ${catTagHtml}
       </div>`;
 
-    // Voeg de Volgende-knop toe nadat iemand heeft geantwoord
     function maakVolgendeKnop() {
       const knopWrap = document.createElement('div');
       knopWrap.style.marginTop = '1rem';
-
       const isLaatste = index === rondeWachtrij.length - 1;
       const knop = document.createElement('button');
-      knop.className   = 'knop-primair';
+      knop.className = 'knop-primair';
       knop.style.width = '100%';
       knop.textContent = isLaatste ? 'Bekijk resultaat →' : 'Volgende →';
       knop.addEventListener('click', () => toonSRVraag(index + 1));
-
       knopWrap.appendChild(knop);
       blok.appendChild(knopWrap);
     }
 
-    function verwerkAntwoord(goed) {
+    function verwerkAntwoord(goed, antwoordData) {
       rondeResultaten[index] = { goed };
-
-      // Sla het antwoord op in de SR data met de categorie van dit item
       const voorheen = [huidigeCategorieKleur, huidigeCategorieNaam];
       huidigeCategorieKleur = itemKleur;
-      huidigeCategorieNaam  = item.categorieNaam || '';
-
+      huidigeCategorieNaam = item.categorieNaam || '';
       registreerAntwoord({
-        id:           item.id,
-        vraag:        item.vraag,
-        type:         item.type,
-        antwoordData: { antwoord: item.antwoord || item.goed || '' },
+        id: item.id,
+        vraag: item.vraag,
+        type: vraagType,
+        antwoordData: antwoordData,
         goed
       });
-
       [huidigeCategorieKleur, huidigeCategorieNaam] = voorheen;
-
       setTimeout(() => maakVolgendeKnop(), 400);
     }
 
-    const antwoord = item.antwoord || item.goed || '';
+    // ─────────────────────────────────────────
+    // MULTIPLE CHOICE UI
+    // ─────────────────────────────────────────
+    if (vraagType === 'multiplechoice') {
+      const opties = item.opties || [];
+      const correcteIndex = item.correcteIndex;
 
-    blok.innerHTML = `
-      ${sterkteMeter}
-      <div class="vraag-tekst" style="color:var(--text)">${item.vraag}</div>
-      <div class="flashcard-onthul-wrap" id="sr-onthul-${index}">
-        <button class="knop-onthul">Tik om het antwoord te zien ↓</button>
-      </div>
-      <div class="flashcard-antwoord-wrap" id="sr-antwoord-${index}" style="display:none">
-        <div class="flashcard-antwoord sr-flashcard-antwoord">${antwoord}</div>
-        <div class="flashcard-goed-fout">
-          <button class="knop-flashcard-fout" id="sr-fout-${index}">✗ Fout</button>
-          <button class="knop-flashcard-goed" id="sr-goed-${index}">✓ Goed</button>
+      // shuffle opties
+      let optiesMetIndex = opties.map((opt, idx) => ({ opt, idx }));
+      for (let i = optiesMetIndex.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [optiesMetIndex[i], optiesMetIndex[j]] = [optiesMetIndex[j], optiesMetIndex[i]];
+      }
+
+      blok.innerHTML = `
+        ${sterkteMeter}
+        <div class="vraag-tekst" style="color:var(--text); margin-bottom:1rem;">${item.vraag}</div>
+        <div class="opties-grid" id="sr-mc-opties-${index}"></div>
+      `;
+
+      const optiesContainer = blok.querySelector(`#sr-mc-opties-${index}`);
+      let beantwoord = false;
+
+      optiesMetIndex.forEach(({ opt, idx }) => {
+        const knop = document.createElement('button');
+        knop.className = 'optie-knop';
+        knop.textContent = opt;
+        knop.addEventListener('click', () => {
+          if (beantwoord) return;
+          beantwoord = true;
+          const gekozenIndex = idx;
+          const goed = (gekozenIndex === correcteIndex);
+          // disable alle opties
+          optiesContainer.querySelectorAll('.optie-knop').forEach(b => b.disabled = true);
+          if (goed) {
+            knop.classList.add('goed');
+          } else {
+            knop.classList.add('fout');
+            const correcteKnop = Array.from(optiesContainer.querySelectorAll('.optie-knop')).find(
+              (b, i) => optiesMetIndex[i].idx === correcteIndex
+            );
+            if (correcteKnop) correcteKnop.classList.add('gemist');
+          }
+          verwerkAntwoord(goed, {
+            vraag: item.vraag,
+            opties: opties,
+            correcteIndex: correcteIndex,
+            gekozenIndex: gekozenIndex
+          });
+        });
+        optiesContainer.appendChild(knop);
+      });
+      inhoud.appendChild(blok);
+    }
+    // ─────────────────────────────────────────
+    // FLASHCARD UI (open vraag)
+    // ─────────────────────────────────────────
+    else {
+      const antwoord = item.antwoord || item.goed || '';
+      blok.innerHTML = `
+        ${sterkteMeter}
+        <div class="vraag-tekst" style="color:var(--text)">${item.vraag}</div>
+        <div class="flashcard-onthul-wrap" id="sr-onthul-${index}">
+          <button class="knop-onthul">Tik om het antwoord te zien ↓</button>
         </div>
-      </div>
-    `;
-
-    let beantwoord = false;
-
-    blok.querySelector('.knop-onthul').addEventListener('click', () => {
-      document.getElementById(`sr-onthul-${index}`).style.display   = 'none';
-      document.getElementById(`sr-antwoord-${index}`).style.display = 'block';
-    });
-
-    blok.querySelector(`#sr-goed-${index}`).addEventListener('click', () => {
-      if (beantwoord) return;
-      beantwoord = true;
-      blok.querySelector(`#sr-goed-${index}`).classList.add('actief-goed');
-      blok.querySelector(`#sr-fout-${index}`).disabled = true;
-      verwerkAntwoord(true);
-    });
-
-    blok.querySelector(`#sr-fout-${index}`).addEventListener('click', () => {
-      if (beantwoord) return;
-      beantwoord = true;
-      blok.querySelector(`#sr-fout-${index}`).classList.add('actief-fout');
-      blok.querySelector(`#sr-goed-${index}`).disabled = true;
-      verwerkAntwoord(false);
-    });
-
-    inhoud.appendChild(blok);
+        <div class="flashcard-antwoord-wrap" id="sr-antwoord-${index}" style="display:none">
+          <div class="flashcard-antwoord sr-flashcard-antwoord">${antwoord}</div>
+          <div class="flashcard-goed-fout">
+            <button class="knop-flashcard-fout" id="sr-fout-${index}">✗ Fout</button>
+            <button class="knop-flashcard-goed" id="sr-goed-${index}">✓ Goed</button>
+          </div>
+        </div>
+      `;
+      let beantwoord = false;
+      blok.querySelector('.knop-onthul').addEventListener('click', () => {
+        document.getElementById(`sr-onthul-${index}`).style.display = 'none';
+        document.getElementById(`sr-antwoord-${index}`).style.display = 'block';
+      });
+      blok.querySelector(`#sr-goed-${index}`).addEventListener('click', () => {
+        if (beantwoord) return;
+        beantwoord = true;
+        blok.querySelector(`#sr-goed-${index}`).classList.add('actief-goed');
+        blok.querySelector(`#sr-fout-${index}`).disabled = true;
+        verwerkAntwoord(true, { antwoord: antwoord });
+      });
+      blok.querySelector(`#sr-fout-${index}`).addEventListener('click', () => {
+        if (beantwoord) return;
+        beantwoord = true;
+        blok.querySelector(`#sr-fout-${index}`).classList.add('actief-fout');
+        blok.querySelector(`#sr-goed-${index}`).disabled = true;
+        verwerkAntwoord(false, { antwoord: antwoord });
+      });
+      inhoud.appendChild(blok);
+    }
   }
 
-  // Eerste ronde starten
   startRonde();
 }
 
