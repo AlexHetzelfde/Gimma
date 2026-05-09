@@ -2010,46 +2010,48 @@ function toonHerhalingsRonde() {
     });
 
     blok.querySelector(`#h-goed-${hi}`).addEventListener('click', () => {
-  if (rondeResultaten[hi].beantwoord) return;
-  blok.querySelector(`#h-goed-${hi}`).classList.add('actief-goed');
-  blok.querySelector(`#h-fout-${hi}`).disabled = true;
-  rondeResultaten[hi] = { beantwoord: true, goed: true };
+      if (rondeResultaten[hi].beantwoord) return;
+      blok.querySelector(`#h-goed-${hi}`).classList.add('actief-goed');
+      blok.querySelector(`#h-fout-${hi}`).disabled = true;
+      rondeResultaten[hi] = { beantwoord: true, goed: true };
 
-  // BUG FIX: registreer het antwoord
-  const vraagData = item.vraagData;
-  registreerAntwoord({
-    id: item.id,
-    vraag: vraagData.vraag,
-    type: vraagData.type || 'flashcard',
-    antwoordData: vraagData.type === 'multiplechoice' 
-      ? { vraag: vraagData.vraag, opties: vraagData.opties, correcteIndex: vraagData.correcteIndex, gekozenIndex: vraagData.correcteIndex }
-      : { antwoord: vraagData.antwoord },
-    goed: true
-  });
+      const vraagData = item.vraagData;
+      registreerAntwoord({
+        id: item.id,
+        vraag: vraagData.vraag,
+        type: vraagData.type || 'flashcard',
+        antwoordData: vraagData.type === 'multiplechoice' 
+          ? { vraag: vraagData.vraag, opties: vraagData.opties, correcteIndex: vraagData.correcteIndex, gekozenIndex: vraagData.correcteIndex }
+          : { antwoord: vraagData.antwoord },
+        goed: true
+      });
 
-  checkAllesHerhaling();
-});
+      checkAllesHerhaling();
+    });
 
     blok.querySelector(`#h-fout-${hi}`).addEventListener('click', () => {
-  if (rondeResultaten[hi].beantwoord) return;
-  blok.querySelector(`#h-fout-${hi}`).classList.add('actief-fout');
-  blok.querySelector(`#h-goed-${hi}`).disabled = true;
-  rondeResultaten[hi] = { beantwoord: true, goed: false };
+      if (rondeResultaten[hi].beantwoord) return;
+      blok.querySelector(`#h-fout-${hi}`).classList.add('actief-fout');
+      blok.querySelector(`#h-goed-${hi}`).disabled = true;
+      rondeResultaten[hi] = { beantwoord: true, goed: false };
 
-  const vraagData = item.vraagData;
-  registreerAntwoord({
-    id: item.id,
-    vraag: vraagData.vraag,
-    type: vraagData.type || 'flashcard',
-    antwoordData: vraagData.type === 'multiplechoice'
-      ? { vraag: vraagData.vraag, opties: vraagData.opties, correcteIndex: vraagData.correcteIndex, gekozenIndex: -1 }
-      : { antwoord: vraagData.antwoord },
-    goed: false
+      const vraagData = item.vraagData;
+      registreerAntwoord({
+        id: item.id,
+        vraag: vraagData.vraag,
+        type: vraagData.type || 'flashcard',
+        antwoordData: vraagData.type === 'multiplechoice'
+          ? { vraag: vraagData.vraag, opties: vraagData.opties, correcteIndex: vraagData.correcteIndex, gekozenIndex: -1 }
+          : { antwoord: vraagData.antwoord },
+        goed: false
+      });
+
+      checkAllesHerhaling();
+    });
+
+    inhoud.appendChild(blok);
   });
-
-  checkAllesHerhaling();
-});
-
+}
 function toonKlaarScherm() {
   document.getElementById('les-scherm').classList.remove('zichtbaar');
   document.getElementById('shields-balk').style.display = 'none';
