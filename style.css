@@ -1,27 +1,27 @@
 :root {
-  --bg:      #0d0b14;
-  --bg2:     #161423;
-  --bg3:     #1e1b2e;
-  --border:  #2a2640;
-  --text:    #edeaff;
-  --muted:   #7270a0;
-  --accent:  #c8a96e;
-  --accent2: #46d98a;
+  --bg:      #1a120b;
+  --bg2:     #251b12;
+  --bg3:     #322417;
+  --border:  #4a3724;
+  --text:    #fff6e8;
+  --muted:   #b89a7a;
+  --accent:  #e68a2e;
+  --accent2: #f0b27a;
   --error:   #f07070;
   --goed:    #46d98a;
   --fout:    #f07070;
-  --les-kleur:     #c8a96e;
-  --les-kleur-rgb: 200, 169, 110;
+  --les-kleur:     #e68a2e;
+  --les-kleur-rgb: 230, 138, 46;
 
-  --kaart-bg:     #161423;
-  --kaart-bg2:    #1e1b2e;
-  --kaart-border: #2a2640;
-  --kaart-tekst:  #edeaff;
-  --kaart-muted:  rgba(237, 234, 255, 0.5);
+  --kaart-bg:     #251b12;
+  --kaart-bg2:    #322417;
+  --kaart-border: #4a3724;
+  --kaart-tekst:  #fff6e8;
+  --kaart-muted:  rgba(255, 246, 232, 0.5);
 
   --radius-card: 20px;
   --radius-btn:  14px;
-  --glow: 0 0 18px rgba(var(--les-kleur-rgb), 0.35);
+  --glow: 0 0 18px rgba(230, 138, 46, 0.35);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,7 +29,7 @@
 body {
   background-color: var(--bg);
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%,
+    rgba(230, 138, 46, 0.12) 0%, transparent 70%);
       rgba(var(--les-kleur-rgb), 0.12) 0%,
       transparent 70%),
     radial-gradient(ellipse 40% 30% at 90% 80%,
@@ -215,27 +215,30 @@ body.layout-telefoon #datum-mobiel-balk {
   background: rgba(255,255,255,0.05);
 }
 
-.layout-knop::after {
-  content: attr(data-tip);
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 0.68rem;
-  padding: 3px 7px;
-  border-radius: 4px;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+@media (hover: hover) {
+  .layout-knop::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.68rem;
+    padding: 3px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    z-index: 200;
+  }
+  .layout-knop:hover::after {
+    opacity: 1;
+  }
 }
-
-.layout-knop:hover::after { opacity: 1; }
-
 .key-knop-header {
   background: var(--bg3);
   border: 1px solid var(--border);
