@@ -586,6 +586,7 @@ async function init() {
 // HOMESCREEN
 // ════════════════════════════════════════
 async function toonHomescreen() {
+  await pasCategorieKleurToe('#ed5b36');
   document.getElementById('key-scherm').classList.remove('zichtbaar');
   document.getElementById('key-knop-header').style.display = 'flex';
   document.getElementById('homescreen').classList.add('zichtbaar');
