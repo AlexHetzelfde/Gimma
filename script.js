@@ -600,12 +600,13 @@ async function toonHomescreen() {
   if (cache && cache.categorieKleur) {
     huidigeCategorieKleur = cache.categorieKleur;
     huidigeCategorieNaam  = cache.categorie || '';
-    pasCategorieKleurToe(cache.categorieKleur);
     document.getElementById('categorie-dot').style.background = cache.categorieKleur;
     document.getElementById('categorie-naam-tekst').textContent = cache.categorie || '';
+    document.getElementById('knop-les-nieuw').style.borderLeftColor = cache.categorieKleur;
     chip.style.display = '';
   } else {
     chip.style.display = 'none';
+    document.getElementById('knop-les-nieuw').style.borderLeftColor = '';
   }
 
   // Bepaal statussen
