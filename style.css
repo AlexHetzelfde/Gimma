@@ -1651,3 +1651,166 @@ body.layout-telefoon .layout-indicator {
   font-size: 0.9rem;
   line-height: 1.7;
 }
+
+/* ════════════════════════════════════════
+   FLASHCARD STIJLEN
+   Voeg dit toe aan het einde van style.css
+   ════════════════════════════════════════ */
+
+/* ── Onthul-knop (voor het antwoord) ── */
+.flashcard-onthul-wrap {
+  margin-top: 1.25rem;
+}
+
+.knop-onthul {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.10);
+  border: 2px dashed rgba(0, 0, 0, 0.22);
+  color: rgba(0, 0, 0, 0.58);
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  text-align: center;
+}
+
+.knop-onthul:hover {
+  background: rgba(0, 0, 0, 0.17);
+  border-color: rgba(0, 0, 0, 0.38);
+  color: rgba(0, 0, 0, 0.75);
+}
+
+/* ── Antwoord wrapper (verschijnt na tik) ── */
+.flashcard-antwoord-wrap {
+  margin-top: 1.25rem;
+  animation: fc-in 0.22s ease;
+}
+
+@keyframes fc-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Antwoord tekst (in het donkere vraagblok) ── */
+.flashcard-antwoord {
+  background: rgba(0, 0, 0, 0.14);
+  border-left: 3px solid rgba(0, 0, 0, 0.25);
+  border-radius: 0 10px 10px 0;
+  padding: 0.9rem 1.1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+  margin-bottom: 1rem;
+  line-height: 1.55;
+}
+
+/* ── Goed / Fout knoppen ── */
+.flashcard-goed-fout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.knop-flashcard-fout,
+.knop-flashcard-goed {
+  padding: 0.95rem 0.75rem;
+  border: none;
+  border-radius: 12px;
+  border-bottom: 3px solid rgba(0, 0, 0, 0.2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+  letter-spacing: 0.01em;
+}
+
+.knop-flashcard-fout {
+  background: #cc5844;
+  color: #fff;
+}
+
+.knop-flashcard-goed {
+  background: #3c9e6a;
+  color: #fff;
+}
+
+.knop-flashcard-fout:hover:not(:disabled),
+.knop-flashcard-goed:hover:not(:disabled) {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+.knop-flashcard-fout:active:not(:disabled),
+.knop-flashcard-goed:active:not(:disabled) {
+  transform: translateY(1px);
+  border-bottom-width: 1px;
+}
+
+.knop-flashcard-fout:disabled,
+.knop-flashcard-goed:disabled {
+  opacity: 0.32;
+  cursor: default;
+  transform: none;
+  border-bottom-width: 1px;
+}
+
+.knop-flashcard-fout.actief-fout {
+  opacity: 1 !important;
+  box-shadow: 0 0 0 3px rgba(204, 88, 68, 0.35);
+}
+
+.knop-flashcard-goed.actief-goed {
+  opacity: 1 !important;
+  box-shadow: 0 0 0 3px rgba(60, 158, 106, 0.35);
+}
+
+/* ── SR review: licht thema overrides voor flashcard ── */
+#sr-vragen-inhoud .knop-onthul {
+  background: var(--bg3);
+  border-color: var(--border);
+  color: var(--muted);
+  border-radius: 8px;
+}
+
+#sr-vragen-inhoud .knop-onthul:hover {
+  border-color: var(--les-kleur);
+  color: var(--text);
+  background: var(--bg3);
+}
+
+/* sr-flashcard-antwoord: licht thema variant */
+.sr-flashcard-antwoord {
+  background: var(--bg3) !important;
+  border-left-color: var(--les-kleur) !important;
+  color: var(--text) !important;
+  border-radius: 0 8px 8px 0;
+}
+
+/* Responsive: kleinere knoppen op mobiel */
+@media (max-width: 480px) {
+  .knop-flashcard-fout,
+  .knop-flashcard-goed {
+    font-size: 0.92rem;
+    padding: 0.85rem 0.5rem;
+  }
+
+  .flashcard-antwoord {
+    font-size: 0.95rem;
+  }
+
+  .knop-onthul {
+    font-size: 0.86rem;
+    padding: 0.85rem 1rem;
+  }
+}
+
+body.layout-telefoon .knop-flashcard-fout,
+body.layout-telefoon .knop-flashcard-goed {
+  font-size: 0.92rem;
+  padding: 0.85rem 0.5rem;
+}
