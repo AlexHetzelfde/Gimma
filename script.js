@@ -2051,77 +2051,138 @@ function toonHerhalingsRonde() {
 
   herhalingsWachtrij.forEach((item, hi) => {
     const vraag   = item.vraagData;
-    // ═══ FIX: juiste antwoordtekst afhankelijk van vraagtype ═══
-    let antwoord;
-    if (vraag.type === 'multiplechoice') {
-      antwoord = vraag.opties?.[vraag.correcteIndex] ?? '';
-    } else {
-      antwoord = vraag.antwoord || vraag.goed || '';
-    }
-
     const blok = document.createElement('div');
     blok.className = 'vraag-blok';
 
-    blok.innerHTML = `
-      <div class="vraag-tekst">${hi + 1}. ${vraag.vraag}</div>
-      <div class="flashcard-onthul-wrap" id="h-onthul-${hi}">
-        <button class="knop-onthul">Tik om het antwoord te zien ↓</button>
-      </div>
-      <div class="flashcard-antwoord-wrap" id="h-antwoord-${hi}" style="display:none">
-        <div class="flashcard-antwoord">${antwoord}</div>
-        <div class="flashcard-goed-fout">
-          <button class="knop-flashcard-fout" id="h-fout-${hi}">✗ Fout</button>
-          <button class="knop-flashcard-goed" id="h-goed-${hi}">✓ Goed</button>
+    // ══════════════════════════
+    // MEERKEUZE VRAGEN
+    // ══════════════════════════
+    if (vraag.type === 'multiplechoice') {
+      const opties = vraag.opties || [];
+      const correcteIndex = vraag.correcteIndex;
+
+      // shuffle opties zodat de volgorde niet hetzelfde is als in de les
+      let optiesMetIndex = opties.map((opt, idx) => ({ opt, idx }));
+      for (let i = optiesMetIndex.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [optiesMetIndex[i], optiesMetIndex[j]] = [optiesMetIndex[j], optiesMetIndex[i]];
+      }
+
+      blok.innerHTML = `
+        <div class="vraag-tekst">${hi + 1}. ${vraag.vraag}</div>
+        <div class="opties-grid" id="h-mc-opties-${hi}"></div>
+      `;
+
+      const optiesContainer = blok.querySelector(`#h-mc-opties-${hi}`);
+      let beantwoord = false;
+
+      optiesMetIndex.forEach(({ opt, idx }) => {
+        const knop = document.createElement('button');
+        knop.className = 'optie-knop';
+        knop.textContent = opt;
+        knop.addEventListener('click', () => {
+          if (beantwoord) return;
+          beantwoord = true;
+          const gekozenIndex = idx;
+          const goed = (gekozenIndex === correcteIndex);
+
+          // visuele feedback
+          optiesContainer.querySelectorAll('.optie-knop').forEach(b => b.disabled = true);
+          if (goed) {
+            knop.classList.add('goed');
+          } else {
+            knop.classList.add('fout');
+            const correcteKnop = Array.from(optiesContainer.querySelectorAll('.optie-knop')).find(
+              (b, i) => optiesMetIndex[i].idx === correcteIndex
+            );
+            if (correcteKnop) correcteKnop.classList.add('gemist');
+          }
+
+          rondeResultaten[hi] = { beantwoord: true, goed };
+
+          registreerAntwoord({
+            id: item.id,
+            vraag: vraag.vraag,
+            type: 'multiplechoice',
+            antwoordData: {
+              vraag: vraag.vraag,
+              opties: opties,
+              correcteIndex: correcteIndex,
+              gekozenIndex: gekozenIndex
+            },
+            goed
+          });
+
+          checkAllesHerhaling();
+        });
+        optiesContainer.appendChild(knop);
+      });
+
+      inhoud.appendChild(blok);
+    }
+    // ══════════════════════════
+    // FLASHCARD VRAGEN (en fallback)
+    // ══════════════════════════
+    else {
+      let antwoord;
+      // Fallback voor oude vragen die nog een 'goed'-veld hadden
+      antwoord = vraag.antwoord || vraag.goed || '';
+
+      blok.innerHTML = `
+        <div class="vraag-tekst">${hi + 1}. ${vraag.vraag}</div>
+        <div class="flashcard-onthul-wrap" id="h-onthul-${hi}">
+          <button class="knop-onthul">Tik om het antwoord te zien ↓</button>
         </div>
-      </div>
-    `;
+        <div class="flashcard-antwoord-wrap" id="h-antwoord-${hi}" style="display:none">
+          <div class="flashcard-antwoord">${antwoord}</div>
+          <div class="flashcard-goed-fout">
+            <button class="knop-flashcard-fout" id="h-fout-${hi}">✗ Fout</button>
+            <button class="knop-flashcard-goed" id="h-goed-${hi}">✓ Goed</button>
+          </div>
+        </div>
+      `;
 
-    blok.querySelector('.knop-onthul').addEventListener('click', () => {
-      document.getElementById(`h-onthul-${hi}`).style.display = 'none';
-      document.getElementById(`h-antwoord-${hi}`).style.display = 'block';
-    });
-
-    blok.querySelector(`#h-goed-${hi}`).addEventListener('click', () => {
-      if (rondeResultaten[hi].beantwoord) return;
-      blok.querySelector(`#h-goed-${hi}`).classList.add('actief-goed');
-      blok.querySelector(`#h-fout-${hi}`).disabled = true;
-      rondeResultaten[hi] = { beantwoord: true, goed: true };
-
-      const vraagData = item.vraagData;
-      registreerAntwoord({
-        id: item.id,
-        vraag: vraagData.vraag,
-        type: vraagData.type || 'flashcard',
-        antwoordData: vraagData.type === 'multiplechoice' 
-          ? { vraag: vraagData.vraag, opties: vraagData.opties, correcteIndex: vraagData.correcteIndex, gekozenIndex: vraagData.correcteIndex }
-          : { antwoord: vraagData.antwoord },
-        goed: true
+      blok.querySelector('.knop-onthul').addEventListener('click', () => {
+        document.getElementById(`h-onthul-${hi}`).style.display = 'none';
+        document.getElementById(`h-antwoord-${hi}`).style.display = 'block';
       });
 
-      checkAllesHerhaling();
-    });
+      blok.querySelector(`#h-goed-${hi}`).addEventListener('click', () => {
+        if (rondeResultaten[hi].beantwoord) return;
+        blok.querySelector(`#h-goed-${hi}`).classList.add('actief-goed');
+        blok.querySelector(`#h-fout-${hi}`).disabled = true;
+        rondeResultaten[hi] = { beantwoord: true, goed: true };
 
-    blok.querySelector(`#h-fout-${hi}`).addEventListener('click', () => {
-      if (rondeResultaten[hi].beantwoord) return;
-      blok.querySelector(`#h-fout-${hi}`).classList.add('actief-fout');
-      blok.querySelector(`#h-goed-${hi}`).disabled = true;
-      rondeResultaten[hi] = { beantwoord: true, goed: false };
+        registreerAntwoord({
+          id: item.id,
+          vraag: vraag.vraag,
+          type: 'flashcard',
+          antwoordData: { antwoord: antwoord },
+          goed: true
+        });
 
-      const vraagData = item.vraagData;
-      registreerAntwoord({
-        id: item.id,
-        vraag: vraagData.vraag,
-        type: vraagData.type || 'flashcard',
-        antwoordData: vraagData.type === 'multiplechoice'
-          ? { vraag: vraagData.vraag, opties: vraagData.opties, correcteIndex: vraagData.correcteIndex, gekozenIndex: -1 }
-          : { antwoord: vraagData.antwoord },
-        goed: false
+        checkAllesHerhaling();
       });
 
-      checkAllesHerhaling();
-    });
+      blok.querySelector(`#h-fout-${hi}`).addEventListener('click', () => {
+        if (rondeResultaten[hi].beantwoord) return;
+        blok.querySelector(`#h-fout-${hi}`).classList.add('actief-fout');
+        blok.querySelector(`#h-goed-${hi}`).disabled = true;
+        rondeResultaten[hi] = { beantwoord: true, goed: false };
 
-    inhoud.appendChild(blok);
+        registreerAntwoord({
+          id: item.id,
+          vraag: vraag.vraag,
+          type: 'flashcard',
+          antwoordData: { antwoord: antwoord },
+          goed: false
+        });
+
+        checkAllesHerhaling();
+      });
+
+      inhoud.appendChild(blok);
+    }
   });
 }
 
