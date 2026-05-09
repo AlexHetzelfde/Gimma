@@ -680,9 +680,8 @@ function toonSRReview(dueItems) {
 
   const totaal = dueItems.length;
   let huidigeIndex = 0;
-  const srResultaten = []; // { goed: bool } per item
+  const srResultaten = [];
 
-  // Update de sub-titel met voortgang
   function updateSubTitel() {
     document.getElementById('sr-review-sub').textContent =
       `Vraag ${huidigeIndex + 1} van ${totaal}`;
@@ -693,7 +692,6 @@ function toonSRReview(dueItems) {
   const inhoud = document.getElementById('sr-vragen-inhoud');
   inhoud.innerHTML = '';
 
-  // Toon eindresultaat
   function toonSREinde() {
     inhoud.innerHTML = '';
     const goedAantal = srResultaten.filter(r => r.goed).length;
@@ -713,7 +711,6 @@ function toonSRReview(dueItems) {
     window.scrollTo({ top: wrap.offsetTop - 40, behavior: 'smooth' });
   }
 
-  // Render één vraag op index
   function toonSRVraag(index) {
     if (index >= totaal) {
       toonSREinde();
@@ -754,7 +751,6 @@ function toonSRReview(dueItems) {
         ${catTagHtml}
       </div>`;
 
-    // Knop voor volgende vraag — verschijnt na antwoord
     function maakVolgendeKnop(goed) {
       const knopWrap = document.createElement('div');
       knopWrap.style.marginTop = '1rem';
@@ -773,7 +769,6 @@ function toonSRReview(dueItems) {
       blok.appendChild(knopWrap);
     }
 
-    // Verwerk antwoord en registreer in SR
     function verwerkAntwoord(goed) {
       srResultaten[index] = { goed };
 
@@ -793,7 +788,6 @@ function toonSRReview(dueItems) {
 
       [huidigeCategorieKleur, huidigeCategorieNaam] = voorheen;
 
-      // Wacht kort zodat feedback zichtbaar is, toon dan volgende-knop
       setTimeout(() => maakVolgendeKnop(goed), 400);
     }
 
@@ -879,7 +873,6 @@ function toonSRReview(dueItems) {
     inhoud.appendChild(blok);
   }
 
-  // Start met de eerste vraag
   toonSRVraag(0);
 }
 
@@ -1020,17 +1013,17 @@ function toonFout(bericht) {
 }
 
 // ════════════════════════════════════════
-// WIKIPEDIA — ARTIKEL OPHALEN
+// WIKIPEDIA — ARTIKEL OPHALEN (English)
 // ════════════════════════════════════════
 async function haalUitgelichtArtikel() {
   try {
-    const res = await fetch('https://nl.wikipedia.org/w/api.php?action=parse&page=Hoofdpagina&prop=text&format=json&origin=*');
-    if (!res.ok) throw new Error('Hoofdpagina niet bereikbaar');
+    const res = await fetch('https://en.wikipedia.org/w/api.php?action=parse&page=Main_Page&prop=text&format=json&origin=*');
+    if (!res.ok) throw new Error('Main Page niet bereikbaar');
     const data = await res.json();
     const doc  = new DOMParser().parseFromString(data.parse.text['*'], 'text/html');
 
     let titel = null;
-    const uitgelichtDiv = doc.querySelector('#mp-uitgelicht');
+    const uitgelichtDiv = doc.querySelector('#mp-tfa');
     if (uitgelichtDiv) {
       const link = uitgelichtDiv.querySelector('a[href^="/wiki/"]:not([href*=":"])');
       if (link) titel = decodeURIComponent(link.getAttribute('href').replace('/wiki/', '').replace(/_/g, ' '));
@@ -1039,17 +1032,17 @@ async function haalUitgelichtArtikel() {
     if (!titel) {
       for (const link of doc.querySelectorAll('a[href^="/wiki/"]:not([href*=":"])')) {
         const t = decodeURIComponent(link.getAttribute('href').replace('/wiki/', '').replace(/_/g, ' '));
-        if (t && t !== 'Hoofdpagina' && link.textContent.length > 3) { titel = t; break; }
+        if (t && t !== 'Main Page' && link.textContent.length > 3) { titel = t; break; }
       }
     }
 
     if (titel) return titel;
   } catch (e) {
-    console.warn('Hoofdpagina-scraping mislukt, val terug op willekeurig artikel:', e);
+    console.warn('Main Page-scraping mislukt, val terug op willekeurig artikel:', e);
   }
 
   const fallbackRes = await fetch(
-    'https://nl.wikipedia.org/w/api.php?action=query&list=random&rnnamespace=0&rnlimit=1&format=json&origin=*'
+    'https://en.wikipedia.org/w/api.php?action=query&list=random&rnnamespace=0&rnlimit=1&format=json&origin=*'
   );
   if (!fallbackRes.ok) throw new Error('Kon geen Wikipedia-artikel ophalen');
   const fallbackData = await fallbackRes.json();
@@ -1059,7 +1052,7 @@ async function haalUitgelichtArtikel() {
 }
 
 async function haalVolledigeTekst(titel) {
-  const url = `https://nl.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titel)}&prop=extracts&explaintext=true&format=json&origin=*`;
+  const url = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titel)}&prop=extracts&explaintext=true&format=json&origin=*`;
   const res  = await fetch(url);
   if (!res.ok) throw new Error('Kon het artikel niet ophalen');
   const data = await res.json();
@@ -1069,12 +1062,12 @@ async function haalVolledigeTekst(titel) {
 }
 
 // ════════════════════════════════════════
-// WIKIPEDIA — AFBEELDINGEN OPHALEN
+// WIKIPEDIA — AFBEELDINGEN OPHALEN (English)
 // ════════════════════════════════════════
 async function haalAfbeeldingen(titel) {
   try {
     const res = await fetch(
-      `https://nl.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titel)}&prop=images&imlimit=30&format=json&origin=*`
+      `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titel)}&prop=images&imlimit=30&format=json&origin=*`
     );
     if (!res.ok) return [];
     const data = await res.json();
@@ -1097,7 +1090,7 @@ async function haalAfbeeldingen(titel) {
 
     const titelsParam = bestandsnamen.join('|');
     const infoRes = await fetch(
-      `https://nl.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titelsParam)}&prop=imageinfo&iiprop=url|size|extmetadata&iiurlwidth=720&format=json&origin=*`
+      `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titelsParam)}&prop=imageinfo&iiprop=url|size|extmetadata&iiurlwidth=720&format=json&origin=*`
     );
     if (!infoRes.ok) return [];
     const infoData = await infoRes.json();
@@ -1202,9 +1195,11 @@ async function verwerkTekstMetGemini(titel, tekst) {
     ? `BESCHIKBARE AFBEELDINGEN UIT DIT ARTIKEL:\n${afbeeldingen.map(a => `• "${a.naam}": ${a.beschrijving}`).join('\n')}\n\nAFBEELDING REGELS:\n- Voeg per sectie MAXIMAAL ÉÉN afbeelding toe\n- ALLEEN als de sectietekst een visueel concept uitlegt waarbij een foto begripsvorming significant verbetert\n- Denk aan: architectonische onderdelen, anatomie, geografische structuren, historische objecten, technische schema's, biologische soorten, kunstwerken, kaarten\n- NIET gebruiken voor: portretten, algemene sfeerbeelden, niet-visuele concepten (politiek, filosofie, etc.)\n- De waarde van "afbeelding" moet EXACT een bestandsnaam uit de lijst hierboven zijn\n- Als geen afbeelding passend is: gebruik null`
     : 'Er zijn geen geschikte afbeeldingen beschikbaar voor dit artikel. Gebruik altijd null voor het afbeelding-veld.';
 
-  const prompt = `Je bent een professionele schrijver die Wikipedia-artikelen omzet naar heldere, boeiende lessen.
+  const prompt = `Je bent een professionele schrijver die Engelstalige Wikipedia-artikelen omzet naar heldere, boeiende Nederlandstalige lessen.
 
-Je krijgt het Wikipedia-artikel: "${titel}"
+Je krijgt het Engelstalige Wikipedia-artikel: "${titel}"
+
+TAAL: De brontekst is in het Engels. Schrijf ALLE output — sectietitels, sectieteksten, tijdlijnen — uitsluitend in correct, vloeiend Nederlands. Vertaal en herschrijf de inhoud; kopieer nooit Engelse zinnen letterlijk over.
 
 JOUW TAAK:
 1. Bepaal hoeveel secties nodig zijn (minimaal 3, maximaal 6) op basis van de lengte en complexiteit van het artikel
@@ -1235,14 +1230,14 @@ GEEF JE ANTWOORD UITSLUITEND ALS GELDIGE JSON — geen uitleg, geen markdown, ge
   "secties": [
     {
       "titel": "Titel van de sectie",
-      "tekst": "De herschreven leesbare tekst. Gebruik \\n\\n tussen alinea's.",
+      "tekst": "De herschreven leesbare tekst in het Nederlands. Gebruik \\n\\n tussen alinea's.",
       "afbeelding": "Exacte_bestandsnaam.jpg",
       "tijdlijn": [{"jaar": "1850", "gebeurtenis": "Wat er gebeurde"}]
     }
   ]
 }
 
-ARTIKEL TEKST:
+ARTIKEL TEKST (Engels):
 ${ingekorte}`;
 
   const resultaat = await geminiCall(key, prompt);
@@ -1282,7 +1277,9 @@ async function maakVragenMetGemini(titel, secties) {
     tekst:  s.tekst
   }));
 
-  const prompt = `Je bent een professionele toetsenmaker. Hieronder staat een herschreven les over "${titel}", verdeeld in secties. Maak per sectie 2 à 3 vragen.
+  const prompt = `Je bent een professionele toetsenmaker. Hieronder staat een herschreven Nederlandstalige les over "${titel}", verdeeld in secties. Maak per sectie 2 à 3 vragen.
+
+TAAL: Alle vragen en antwoorden moeten in het Nederlands zijn.
 
 VRAGENREGELS — lees deze zorgvuldig:
 
