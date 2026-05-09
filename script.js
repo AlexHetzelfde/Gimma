@@ -284,191 +284,113 @@ function sluitStatsModal() {
 }
 
 async function renderStats() {
-  const el  = document.getElementById('stats-inhoud');
-  const sr  = await haalSRData();
+  const el = document.getElementById('stats-inhoud');
+  const sr = await haalSRData();
 
   if (!sr || sr.length === 0) {
-    el.innerHTML = `<div class="stats-leeg">
-      🌱 Nog geen data — maak je eerste les<br/>om je voortgang bij te houden.
-    </div>`;
+    el.innerHTML = `<div class="stats-leeg">🌱 Nog geen data — maak je eerste les om je voortgang bij te houden.</div>`;
     return;
   }
 
-  const totaal   = sr.length;
-  const nieuw    = sr.filter(i => (i.strength ?? 20) < 35).length;
-  const lerend   = sr.filter(i => (i.strength ?? 20) >= 35 && (i.strength ?? 20) < 70).length;
+  const totaal = sr.length;
+  const nieuw = sr.filter(i => (i.strength ?? 20) < 35).length;
+  const lerend = sr.filter(i => (i.strength ?? 20) >= 35 && (i.strength ?? 20) < 70).length;
   const beheerst = sr.filter(i => (i.strength ?? 20) >= 70).length;
-  const gemStr   = Math.round(sr.reduce((s, i) => s + (i.strength ?? 20), 0) / totaal);
-
-  const uniekeLessen = new Set(
-    sr.map(i => {
-      const match = i.id.match(/^(.+)_s\d+_v\d+$/);
-      return match ? match[1] : i.id;
-    })
-  ).size;
+  const gemStr = Math.round(sr.reduce((s, i) => s + (i.strength ?? 20), 0) / totaal);
+  const uniekeLessen = new Set(sr.map(i => i.id.replace(/_[^_]+_[^_]+$/, ''))).size;
 
   const vandaag = Date.now();
-  const dueMorgen = new Date();
-  dueMorgen.setDate(dueMorgen.getDate() + 1);
-  dueMorgen.setHours(23, 59, 59, 999);
-
+  const morgen = new Date(); morgen.setDate(morgen.getDate() + 1); morgen.setHours(23,59,59,999);
   const teHerhalen = sr.filter(i => i.next_due && i.next_due <= vandaag).length;
-  const morgenDue  = sr.filter(i => i.next_due && i.next_due > vandaag && i.next_due <= dueMorgen.getTime()).length;
+  const morgenDue = sr.filter(i => i.next_due && i.next_due > vandaag && i.next_due <= morgen.getTime()).length;
 
-  const dagNamen = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za'];
+  // Komende 7 dagen (exclusief vandaag)
+  const komendeDagen = [];
+  for (let i = 1; i <= 7; i++) {
+    const dagStart = new Date(); dagStart.setDate(dagStart.getDate() + i); dagStart.setHours(0,0,0,0);
+    const dagEind = new Date(dagStart); dagEind.setHours(23,59,59,999);
+    const count = sr.filter(i => i.next_due && i.next_due >= dagStart.getTime() && i.next_due <= dagEind.getTime()).length;
+    komendeDagen.push({ dag: dagStart.toLocaleDateString('nl-NL', { weekday:'short', day:'numeric' }), count });
+  }
+
+  // Weekhistorie (laatste 7 dagen)
+  const dagNamen = ['zo','ma','di','wo','do','vr','za'];
   const weekData = [];
   for (let d = 6; d >= 0; d--) {
-    const dagStart = new Date();
-    dagStart.setDate(dagStart.getDate() - d);
-    dagStart.setHours(0, 0, 0, 0);
-    const dagEind = new Date(dagStart);
-    dagEind.setHours(23, 59, 59, 999);
-    const count = sr.filter(i =>
-      i.last_seen &&
-      i.last_seen >= dagStart.getTime() &&
-      i.last_seen <= dagEind.getTime()
-    ).length;
-    weekData.push({
-      label:    dagNamen[dagStart.getDay()],
-      count,
-      isVandaag: d === 0
-    });
+    const dagStart = new Date(); dagStart.setDate(dagStart.getDate() - d); dagStart.setHours(0,0,0,0);
+    const dagEind = new Date(dagStart); dagEind.setHours(23,59,59,999);
+    const count = sr.filter(i => i.last_seen && i.last_seen >= dagStart.getTime() && i.last_seen <= dagEind.getTime()).length;
+    weekData.push({ label: dagNamen[dagStart.getDay()], count, isVandaag: d === 0 });
   }
   const maxWeek = Math.max(...weekData.map(d => d.count), 1);
 
+  // Categorieën verbeterd
   const catMap = {};
   for (const item of sr) {
-    const naam  = item.categorieNaam  || 'Overig';
-    const kleur = item.categorieKleur || '#c8a96e';
-    if (!catMap[naam]) catMap[naam] = { kleur, items: [] };
+    const naam = item.categorieNaam || 'Overig';
+    const kleur = item.categorieKleur || '#e68a2e';
+    if (!catMap[naam]) catMap[naam] = { kleur, items: [], totalStrength: 0, count: 0 };
     catMap[naam].items.push(item.strength ?? 20);
+    catMap[naam].totalStrength += (item.strength ?? 20);
+    catMap[naam].count++;
   }
-  const catLijst = Object.entries(catMap)
-    .map(([naam, { kleur, items }]) => ({
-      naam, kleur,
-      aantal: items.length,
-      gemStr: Math.round(items.reduce((s, v) => s + v, 0) / items.length)
-    }))
-    .sort((a, b) => b.aantal - a.aantal);
+  const catLijst = Object.entries(catMap).map(([naam, { kleur, totalStrength, count }]) => ({
+    naam, kleur, aantal: count, gemStr: Math.round(totalStrength / count)
+  })).sort((a,b) => b.aantal - a.aantal);
 
-  let volgendeTekst = '';
-  if (teHerhalen > 0) {
-    volgendeTekst = `🔁 ${teHerhalen} vraag${teHerhalen !== 1 ? 'en' : ''} wacht${teHerhalen === 1 ? '' : 'en'} op herhaling`;
-  } else if (morgenDue > 0) {
-    volgendeTekst = `✓ Alles gedaan — morgen ${morgenDue} vraag${morgenDue !== 1 ? 'en' : ''} terug`;
-  } else {
-    const eerstVolgende = sr
-      .filter(i => i.next_due && i.next_due > vandaag)
-      .sort((a, b) => a.next_due - b.next_due)[0];
-    if (eerstVolgende) {
-      const d = new Date(eerstVolgende.next_due);
-      volgendeTekst = `✓ Volgende herhaling op ${d.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}`;
-    } else {
-      volgendeTekst = `✓ Geen herhalingen gepland`;
-    }
-  }
+  // HTML bouwen
+  const nPct = totaal ? Math.round((nieuw/totaal)*100) : 0;
+  const lPct = totaal ? Math.round((lerend/totaal)*100) : 0;
+  const bPct = totaal ? Math.round((beheerst/totaal)*100) : 0;
 
-  const nPct = totaal > 0 ? Math.round((nieuw    / totaal) * 100) : 0;
-  const lPct = totaal > 0 ? Math.round((lerend   / totaal) * 100) : 0;
-  const bPct = totaal > 0 ? Math.round((beheerst / totaal) * 100) : 0;
-
-  const weekHtml = weekData.map(dag => {
-    const hoogtePct = dag.count > 0 ? Math.max(12, Math.round((dag.count / maxWeek) * 100)) : 6;
-    const heeftData = dag.count > 0;
-    return `
-      <div class="stats-week-dag">
-        <div class="stats-week-balk-wrap">
-          <div
-            class="stats-week-balk ${heeftData ? 'heeft-data' : ''} ${dag.isVandaag ? 'vandaag-balk' : ''}"
-            style="height:${hoogtePct}%"
-            title="${dag.count} vragen${dag.isVandaag ? ' (vandaag)' : ''}"
-          ></div>
-        </div>
-        <div class="stats-week-label ${dag.isVandaag ? 'vandaag-label' : ''}">${dag.label}</div>
+  const weekHtml = weekData.map(dag => `
+    <div class="stats-week-dag">
+      <div class="stats-week-balk-wrap">
+        <div class="stats-week-balk ${dag.count > 0 ? 'heeft-data' : ''} ${dag.isVandaag ? 'vandaag-balk' : ''}" style="height:${Math.max(6, Math.round((dag.count/maxWeek)*100))}%"></div>
       </div>
-    `;
-  }).join('');
+      <div class="stats-week-label ${dag.isVandaag ? 'vandaag-label' : ''}">${dag.label}</div>
+    </div>
+  `).join('');
 
-  const dueBalkHtml = teHerhalen > 0
-    ? `<div class="stats-due-balk">
-        <div class="stats-due-tekst">
-          Te herhalen vandaag
-          <small>Ga naar home om te starten</small>
-        </div>
-        <div class="stats-due-getal">${teHerhalen}</div>
-      </div>`
-    : morgenDue > 0
-      ? `<div class="stats-due-balk" style="background:rgba(90,158,122,0.07);border-color:rgba(90,158,122,0.2)">
-          <div class="stats-due-tekst" style="color:var(--accent2)">
-            Alles vandaag gedaan ✓
-            <small style="color:var(--muted)">Morgen ${morgenDue} vragen terug</small>
-          </div>
-          <div class="stats-due-getal" style="color:var(--accent2)">✓</div>
-        </div>`
-      : '';
+  const komendeHtml = komendeDagen.map(d => `
+    <div style="text-align:center; font-size:0.7rem; min-width: 32px;">
+      <div style="font-weight:600; margin-bottom:2px;">${d.dag}</div>
+      <div style="background:var(--les-kleur); border-radius:10px; padding:2px 0; color:#000; font-weight:bold;">${d.count}</div>
+    </div>
+  `).join('');
 
   el.innerHTML = `
     <div class="stats-hero">
-      <div class="stats-hero-item accent-tegel">
-        <div class="stats-hero-getal">${totaal}</div>
-        <div class="stats-hero-label">Vragen geleerd</div>
-      </div>
-      <div class="stats-hero-item">
-        <div class="stats-hero-getal">${beheerst}</div>
-        <div class="stats-hero-label">Beheerst</div>
-      </div>
-      <div class="stats-hero-item">
-        <div class="stats-hero-getal">${gemStr}%</div>
-        <div class="stats-hero-label">Gem. sterkte</div>
-      </div>
-      <div class="stats-hero-item">
-        <div class="stats-hero-getal">${uniekeLessen}</div>
-        <div class="stats-hero-label">Lessen gevolgd</div>
-      </div>
+      <div class="stats-hero-item accent-tegel"><div class="stats-hero-getal">${totaal}</div><div class="stats-hero-label">Vragen geleerd</div></div>
+      <div class="stats-hero-item"><div class="stats-hero-getal">${beheerst}</div><div class="stats-hero-label">Beheerst</div></div>
+      <div class="stats-hero-item"><div class="stats-hero-getal">${gemStr}%</div><div class="stats-hero-label">Gem. sterkte</div></div>
+      <div class="stats-hero-item"><div class="stats-hero-getal">${uniekeLessen}</div><div class="stats-hero-label">Lessen gevolgd</div></div>
     </div>
-
-    ${dueBalkHtml}
-
+    <div class="stats-due-balk" style="background:rgba(230,138,46,0.07); border-color:rgba(230,138,46,0.2);">
+      <div class="stats-due-tekst">${teHerhalen > 0 ? `🔁 ${teHerhalen} te herhalen vandaag` : (morgenDue > 0 ? `✓ Alles gedaan — morgen ${morgenDue} vragen` : `✓ Geen herhalingen gepland`)}</div>
+      <div class="stats-due-getal">${teHerhalen > 0 ? teHerhalen : '✓'}</div>
+    </div>
+    <div class="stats-sectie-kop">Komende herhalingen (7 dagen)</div>
+    <div style="display:flex; gap:0.5rem; justify-content:space-around; margin-bottom:1rem;">${komendeHtml}</div>
     <div class="stats-sectie-kop">Sterkte verdeling</div>
-    <div class="stats-verdeling">
-      <div class="stats-verdeling-balk" style="width:${nPct}%;background:var(--fout)"></div>
-      <div class="stats-verdeling-balk" style="width:${lPct}%;background:var(--accent)"></div>
-      <div class="stats-verdeling-balk" style="width:${bPct}%;background:var(--goed)"></div>
-    </div>
+    <div class="stats-verdeling"><div class="stats-verdeling-balk" style="width:${nPct}%;background:var(--fout)"></div><div class="stats-verdeling-balk" style="width:${lPct}%;background:var(--accent)"></div><div class="stats-verdeling-balk" style="width:${bPct}%;background:var(--goed)"></div></div>
     <div class="stats-legenda">
-      <span class="stats-legenda-item">
-        <span class="stats-legenda-dot" style="background:var(--fout)"></span>
-        Nieuw (${nieuw})
-      </span>
-      <span class="stats-legenda-item">
-        <span class="stats-legenda-dot" style="background:var(--accent)"></span>
-        Aan het leren (${lerend})
-      </span>
-      <span class="stats-legenda-item">
-        <span class="stats-legenda-dot" style="background:var(--goed)"></span>
-        Beheerst (${beheerst})
-      </span>
+      <span class="stats-legenda-item"><span class="stats-legenda-dot" style="background:var(--fout)"></span>Nieuw (${nieuw})</span>
+      <span class="stats-legenda-item"><span class="stats-legenda-dot" style="background:var(--accent)"></span>Aan het leren (${lerend})</span>
+      <span class="stats-legenda-item"><span class="stats-legenda-dot" style="background:var(--goed)"></span>Beheerst (${beheerst})</span>
     </div>
-
     <div class="stats-sectie-kop">Activiteit (7 dagen)</div>
     <div class="stats-week-wrap">${weekHtml}</div>
-
     <div class="stats-sectie-kop">Categorieën</div>
-    <div>
-      ${catLijst.map(c => `
-        <div class="stats-cat-rij">
-          <div class="stats-cat-dot" style="background:${c.kleur}"></div>
-          <div class="stats-cat-naam">${c.naam}</div>
-          <div class="stats-cat-balk-wrap">
-            <div class="stats-cat-balk" style="width:${c.gemStr}%;background:${sterktekleur(c.gemStr)}"></div>
-          </div>
-          <div class="stats-cat-getal">${c.gemStr}%</div>
-          <div class="stats-cat-getal" style="min-width:36px;text-align:right">${c.aantal} ✦</div>
-        </div>
-      `).join('')}
-    </div>
-
-    <div class="stats-volgende">${volgendeTekst}</div>
+    <div>${catLijst.map(c => `
+      <div class="stats-cat-rij">
+        <div class="stats-cat-dot" style="background:${c.kleur}"></div>
+        <div class="stats-cat-naam">${c.naam}</div>
+        <div class="stats-cat-balk-wrap"><div class="stats-cat-balk" style="width:${c.gemStr}%;background:${sterktekleur(c.gemStr)}"></div></div>
+        <div class="stats-cat-getal">${c.gemStr}%</div>
+        <div class="stats-cat-getal" style="min-width:36px;text-align:right">${c.aantal} ✦</div>
+      </div>
+    `).join('')}</div>
   `;
 }
 
@@ -1372,39 +1294,36 @@ async function maakVragenMetGemini(titel, secties) {
     tekst:  s.tekst
   }));
 
-  const prompt = `Je bent een professionele toetsenmaker. Hieronder staat een herschreven Nederlandstalige les over "${titel}", verdeeld in secties. Maak per sectie 2 à 3 flashcard-vragen.
+  const prompt = `Je bent een professionele toetsenmaker. Hieronder staat een herschreven Nederlandstalige les over "${titel}", verdeeld in secties. Maak per sectie 2 à 3 vragen. Elke vraag is willekeurig OF een multiple choice vraag (met 4 opties, 1 juist) OF een flashcard vraag (open vraag met antwoord). Je kiest zelf per vraag welk type het beste past. Zorg voor een afwisseling.
 
-TAAL: Alle vragen en antwoorden moeten in het Nederlands zijn.
+TAAL: Alle vragen en antwoorden in het Nederlands.
 
-FLASHCARD VRAGENREGELS — lees deze zorgvuldig:
-
-ALGEMEEN:
-- Elke vraag moet zelfstandig begrijpelijk zijn, ook zonder de lestekst erbij
-- Toets bij voorkeur verbanden, oorzaken, gevolgen en betekenis — niet alleen losse feiten
-- Minstens de helft van alle vragen moet gaan over waarom iets zo is, waardoor iets gebeurde, wat het gevolg was, of wat het verband is tussen twee concepten
+MULTIPLE CHOICE REGELS:
+- Precies 4 opties, waarvan 1 correct.
+- De drie andere opties zijn aannemelijk fout.
+- Voeg "opties": ["optie1","optie2","optie3","optie4"] en "correcteIndex" (0..3) toe.
 
 FLASHCARD REGELS:
-- De vraag is helder en specifiek
-- Het antwoord is een volledige, zelfstandig begrijpelijke zin of frase (1–20 woorden)
-- Het antwoord legt de kern van de vraag volledig uit — geen losse woorden zonder context
-- VERBODEN als antwoord: losse bijvoeglijk naamwoorden ("oude", "grote"), vage losse fragmenten, woorden die alleen in context betekenis hebben
-- Goed voorbeeld → vraag: "Wie ontdekte de penicilline, en wanneer?" antwoord: "Alexander Fleming ontdekte het in 1928 per toeval in zijn laboratorium"
-- Goed voorbeeld → vraag: "Wat was de belangrijkste oorzaak van de Eerste Wereldoorlog?" antwoord: "De moord op Franz Ferdinand en de escalerende bondgenootschappen in Europa"
-- Goed voorbeeld → vraag: "Welke organisatie stelt de officiële spellingregels voor het Nederlands vast?" antwoord: "De Taalunie, een samenwerkingsverband van Nederland en België"
-- FOUT voorbeeld → antwoord: "oude" ← DIT IS VERBODEN
-- FOUT voorbeeld → antwoord: "het Russische" ← DIT IS VERBODEN
+- Gebruik type "flashcard"
+- Vraag en antwoord zoals vroeger (antwoord is een korte zin).
 
-GEEF JE ANTWOORD UITSLUITEND ALS GELDIGE JSON — geen uitleg, geen markdown, geen backticks.
-Geef exact evenveel secties terug als je hebt ontvangen, in dezelfde volgorde.
+GEEF JE ANTWOORD UITSLUITEND ALS JSON — geen uitleg, geen markdown.
+Gebruik voor elke vraag dit formaat:
 
 {
   "secties": [
     {
       "vragen": [
         {
+          "type": "multiplechoice",
+          "vraag": "Wat was de belangrijkste oorzaak?",
+          "opties": ["optie A", "optie B", "optie C", "optie D"],
+          "correcteIndex": 0
+        },
+        {
           "type": "flashcard",
-          "vraag": "De vraag?",
-          "antwoord": "Het volledige antwoord in maximaal 20 woorden"
+          "vraag": "Wat is de hoofdstad van Frankrijk?",
+          "antwoord": "Parijs"
         }
       ]
     }
@@ -1711,8 +1630,11 @@ function toonVraag(vi) {
   document.getElementById('terug-naar-vraag-balk').style.display  = 'none';
   document.getElementById('vragen-sectie').style.display          = 'block';
 
-  document.getElementById('knop-weetniets').style.display = 'none';
-  document.getElementById('knop-kijkop').style.display   = 'inline-flex';
+  // 'Weet niet' knop zichtbaar
+  const weetNietBtn = document.getElementById('knop-weetniets');
+  if (weetNietBtn) weetNietBtn.style.display = 'inline-flex';
+  const kijkOpBtn = document.getElementById('knop-kijkop');
+  if (kijkOpBtn) kijkOpBtn.style.display = 'inline-flex';
 
   const knopVolgende = document.getElementById('knop-volgende');
   knopVolgende.disabled = true;
@@ -1734,89 +1656,202 @@ function toonVraag(vi) {
   const inhoud = document.getElementById('vragen-inhoud');
   inhoud.innerHTML = '';
 
-  const blok = document.createElement('div');
-  blok.className = 'vraag-blok';
+  // --- Bepaal type vraag ---
+  const vraagType = vraag.type || 'flashcard'; // fallback
 
-  let beantwoord = false;
+  if (vraagType === 'multiplechoice') {
+    // --- Meerkeuze UI ---
+    const opties = vraag.opties || [];
+    const correcteIndex = vraag.correcteIndex;
+    let optiesMetIndex = opties.map((opt, idx) => ({ opt, idx }));
+    for (let i = optiesMetIndex.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [optiesMetIndex[i], optiesMetIndex[j]] = [optiesMetIndex[j], optiesMetIndex[i]];
+    }
 
-  function onAntwoord(goed) {
-    if (beantwoord) return;
-    beantwoord = true;
+    const blok = document.createElement('div');
+    blok.className = 'vraag-blok';
+    let beantwoord = false;
+    let gekozenIndex = -1;
 
-    vraagResultaten[vraagId] = goed ? 'goed' : 'fout';
-    sessieAntwoorden.push({
-      sectieIndex: huidigeSectie,
-      vraagIndex:  vi,
-      id:          vraagId,
-      goed
+    function onAntwoord(goed) {
+      if (beantwoord) return;
+      beantwoord = true;
+      vraagResultaten[vraagId] = goed ? 'goed' : 'fout';
+      sessieAntwoorden.push({ sectieIndex: huidigeSectie, vraagIndex: vi, id: vraagId, goed });
+      registreerAntwoord({
+        id: vraagId, vraag: vraag.vraag, type: 'multiplechoice',
+        antwoordData: { vraag: vraag.vraag, opties, correcteIndex, gekozenIndex }, goed
+      });
+      if (weetNietBtn) weetNietBtn.style.display = 'none';
+      if (kijkOpBtn) kijkOpBtn.style.display = 'none';
+      knopVolgende.disabled = false;
+      slaVoortgangOp({ sectieIndex: huidigeSectie, vraagIndex: vi, inVragen: true, voltooid: false, titel: artikelTitel, vraagResultaten });
+      renderShields();
+    }
+
+    const vraagDiv = document.createElement('div');
+    vraagDiv.className = 'vraag-tekst';
+    vraagDiv.textContent = vraag.vraag;
+    blok.appendChild(vraagDiv);
+
+    const optiesDiv = document.createElement('div');
+    optiesDiv.className = 'opties-grid';
+    optiesDiv.style.cssText = 'display:flex;flex-direction:column;gap:0.65rem;margin-top:1rem';
+    optiesMetIndex.forEach(({ opt, idx }) => {
+      const knop = document.createElement('button');
+      knop.className = 'optie-knop';
+      knop.textContent = opt;
+      knop.addEventListener('click', () => {
+        if (beantwoord) return;
+        gekozenIndex = idx;
+        const goed = (gekozenIndex === correcteIndex);
+        optiesDiv.querySelectorAll('.optie-knop').forEach(b => b.disabled = true);
+        if (goed) knop.classList.add('goed');
+        else {
+          knop.classList.add('fout');
+          const correcteKnop = Array.from(optiesDiv.querySelectorAll('.optie-knop')).find((b, i) => optiesMetIndex[i].idx === correcteIndex);
+          if (correcteKnop) correcteKnop.classList.add('gemist');
+        }
+        onAntwoord(goed);
+      });
+      optiesDiv.appendChild(knop);
     });
-    registreerAntwoord({
-      id:          vraagId,
-      vraag:       vraag.vraag,
-      type:        vraag.type || 'flashcard',
-      antwoordData: { antwoord: vraag.antwoord || vraag.goed || '' },
-      goed
-    });
+    blok.appendChild(optiesDiv);
+    inhoud.appendChild(blok);
+  } else {
+    // --- FLASHCARD UI (open vraag) ---
+    const antwoord = vraag.antwoord || '';
+    const blok = document.createElement('div');
+    blok.className = 'vraag-blok';
+    let beantwoord = false;
 
-    document.getElementById('knop-kijkop').style.display = 'none';
-    knopVolgende.disabled = false;
+    blok.innerHTML = `
+      <div class="vraag-tekst">${vraag.vraag}</div>
+      <div class="flashcard-onthul-wrap" id="fc-onthul-wrap-${vi}">
+        <button class="knop-onthul">Tik om het antwoord te zien ↓</button>
+      </div>
+      <div class="flashcard-antwoord-wrap" id="fc-antwoord-wrap-${vi}" style="display:none">
+        <div class="flashcard-antwoord">${antwoord}</div>
+        <div class="flashcard-goed-fout">
+          <button class="knop-flashcard-fout" id="fc-fout-${vi}">✗ Fout</button>
+          <button class="knop-flashcard-goed" id="fc-goed-${vi}">✓ Goed</button>
+        </div>
+      </div>
+    `;
 
-    slaVoortgangOp({
-      sectieIndex: huidigeSectie,
-      vraagIndex:  vi,
-      inVragen:    true,
-      voltooid:    false,
-      titel:       artikelTitel,
-      vraagResultaten: vraagResultaten
-    });
+    function onFlashcardAntwoord(goed) {
+      if (beantwoord) return;
+      beantwoord = true;
+      vraagResultaten[vraagId] = goed ? 'goed' : 'fout';
+      sessieAntwoorden.push({ sectieIndex: huidigeSectie, vraagIndex: vi, id: vraagId, goed });
+      registreerAntwoord({
+        id: vraagId, vraag: vraag.vraag, type: 'flashcard',
+        antwoordData: { antwoord }, goed
+      });
+      if (weetNietBtn) weetNietBtn.style.display = 'none';
+      if (kijkOpBtn) kijkOpBtn.style.display = 'none';
+      knopVolgende.disabled = false;
+      slaVoortgangOp({ sectieIndex: huidigeSectie, vraagIndex: vi, inVragen: true, voltooid: false, titel: artikelTitel, vraagResultaten });
+      renderShields();
+    }
 
-    renderShields();
-
-    setTimeout(() => {
-      const fc = blok.querySelector('.flashcard-antwoord-wrap');
-      if (fc) fc.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 120);
+    blok.querySelector('.knop-onthul').onclick = () => {
+      document.getElementById(`fc-onthul-wrap-${vi}`).style.display = 'none';
+      document.getElementById(`fc-antwoord-wrap-${vi}`).style.display = 'block';
+      if (kijkOpBtn) kijkOpBtn.style.display = 'none';
+    };
+    blok.querySelector(`#fc-goed-${vi}`).onclick = () => {
+      if (beantwoord) return;
+      blok.querySelector(`#fc-goed-${vi}`).classList.add('actief-goed');
+      blok.querySelector(`#fc-fout-${vi}`).disabled = true;
+      onFlashcardAntwoord(true);
+    };
+    blok.querySelector(`#fc-fout-${vi}`).onclick = () => {
+      if (beantwoord) return;
+      blok.querySelector(`#fc-fout-${vi}`).classList.add('actief-fout');
+      blok.querySelector(`#fc-goed-${vi}`).disabled = true;
+      onFlashcardAntwoord(false);
+    };
+    inhoud.appendChild(blok);
   }
 
-  const antwoord = vraag.antwoord || vraag.goed || '';
-
-  blok.innerHTML = `
-    <div class="vraag-tekst">${vraag.vraag}</div>
-    <div class="flashcard-onthul-wrap" id="fc-onthul-wrap">
-      <button class="knop-onthul">Tik om het antwoord te zien ↓</button>
-    </div>
-    <div class="flashcard-antwoord-wrap" id="fc-antwoord-wrap" style="display:none">
-      <div class="flashcard-antwoord">${antwoord}</div>
-      <div class="flashcard-goed-fout">
-        <button class="knop-flashcard-fout" id="fc-fout">✗ Fout</button>
-        <button class="knop-flashcard-goed" id="fc-goed">✓ Goed</button>
-      </div>
-    </div>
-  `;
-
-  blok.querySelector('.knop-onthul').addEventListener('click', () => {
-    document.getElementById('fc-onthul-wrap').style.display = 'none';
-    document.getElementById('fc-antwoord-wrap').style.display = 'block';
-    document.getElementById('knop-kijkop').style.display = 'none';
-  });
-
-  blok.querySelector('#fc-goed').addEventListener('click', () => {
-    if (beantwoord) return;
-    blok.querySelector('#fc-goed').classList.add('actief-goed');
-    blok.querySelector('#fc-fout').disabled = true;
-    onAntwoord(true);
-  });
-
-  blok.querySelector('#fc-fout').addEventListener('click', () => {
-    if (beantwoord) return;
-    blok.querySelector('#fc-fout').classList.add('actief-fout');
-    blok.querySelector('#fc-goed').disabled = true;
-    onAntwoord(false);
-  });
-
-  inhoud.appendChild(blok);
   renderShields();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function markeerHuidigeVraagFout() {
+  if (!inVraagModus) return;
+  const sectie = lesData.secties[huidigeSectie];
+  const vraag = sectie.vragen[huidigeVraag];
+  const vraagId = maakVraagId(artikelTitel, huidigeSectie, huidigeVraag);
+
+  // Bepaal antwoordData op basis van type
+  let antwoordData = {};
+  if (vraag.type === 'multiplechoice') {
+    antwoordData = {
+      vraag: vraag.vraag,
+      opties: vraag.opties,
+      correcteIndex: vraag.correcteIndex,
+      gekozenIndex: -1
+    };
+  } else {
+    antwoordData = { antwoord: vraag.antwoord || '' };
+  }
+
+  vraagResultaten[vraagId] = 'fout';
+  sessieAntwoorden.push({ sectieIndex: huidigeSectie, vraagIndex: huidigeVraag, id: vraagId, goed: false });
+  registreerAntwoord({
+    id: vraagId,
+    vraag: vraag.vraag,
+    type: vraag.type || 'flashcard',
+    antwoordData,
+    goed: false
+  });
+
+  // UI feedback: toon het juiste antwoord
+  const inhoud = document.getElementById('vragen-inhoud');
+  const blok = inhoud.querySelector('.vraag-blok');
+  if (blok) {
+    if (vraag.type === 'multiplechoice') {
+      const optieKnoppen = blok.querySelectorAll('.optie-knop');
+      optieKnoppen.forEach(btn => btn.disabled = true);
+      const correcteOptie = Array.from(optieKnoppen).find((btn, idx) => {
+        const optieTekst = btn.textContent;
+        return optieTekst === vraag.opties[vraag.correcteIndex];
+      });
+      if (correcteOptie) correcteOptie.classList.add('gemist');
+      const feedback = document.createElement('div');
+      feedback.className = 'feedback fout';
+      feedback.textContent = `Weet niet – juiste antwoord: ${vraag.opties[vraag.correcteIndex]}`;
+      blok.appendChild(feedback);
+    } else {
+      // Flashcard: toon antwoord als dat nog niet gebeurd is
+      const antwoordWrap = blok.querySelector('.flashcard-antwoord-wrap');
+      if (antwoordWrap && antwoordWrap.style.display !== 'block') {
+        blok.querySelector('.flashcard-onthul-wrap').style.display = 'none';
+        antwoordWrap.style.display = 'block';
+      }
+      const feedback = document.createElement('div');
+      feedback.className = 'feedback fout';
+      feedback.textContent = `Weet niet – het juiste antwoord is: ${vraag.antwoord || '?'}`;
+      blok.appendChild(feedback);
+    }
+  }
+
+  document.getElementById('knop-weetniets').style.display = 'none';
+  document.getElementById('knop-kijkop').style.display = 'none';
+  document.getElementById('knop-volgende').disabled = false;
+
+  slaVoortgangOp({
+    sectieIndex: huidigeSectie,
+    vraagIndex: huidigeVraag,
+    inVragen: true,
+    voltooid: false,
+    titel: artikelTitel,
+    vraagResultaten
+  });
+  renderShields();
 }
 
 function toonTekstLookup() {
@@ -1975,24 +2010,45 @@ function toonHerhalingsRonde() {
     });
 
     blok.querySelector(`#h-goed-${hi}`).addEventListener('click', () => {
-      if (rondeResultaten[hi].beantwoord) return;
-      blok.querySelector(`#h-goed-${hi}`).classList.add('actief-goed');
-      blok.querySelector(`#h-fout-${hi}`).disabled = true;
-      rondeResultaten[hi] = { beantwoord: true, goed: true };
-      checkAllesHerhaling();
-    });
+  if (rondeResultaten[hi].beantwoord) return;
+  blok.querySelector(`#h-goed-${hi}`).classList.add('actief-goed');
+  blok.querySelector(`#h-fout-${hi}`).disabled = true;
+  rondeResultaten[hi] = { beantwoord: true, goed: true };
+
+  // BUG FIX: registreer het antwoord
+  const vraagData = item.vraagData;
+  registreerAntwoord({
+    id: item.id,
+    vraag: vraagData.vraag,
+    type: vraagData.type || 'flashcard',
+    antwoordData: vraagData.type === 'multiplechoice' 
+      ? { vraag: vraagData.vraag, opties: vraagData.opties, correcteIndex: vraagData.correcteIndex, gekozenIndex: vraagData.correcteIndex }
+      : { antwoord: vraagData.antwoord },
+    goed: true
+  });
+
+  checkAllesHerhaling();
+});
 
     blok.querySelector(`#h-fout-${hi}`).addEventListener('click', () => {
-      if (rondeResultaten[hi].beantwoord) return;
-      blok.querySelector(`#h-fout-${hi}`).classList.add('actief-fout');
-      blok.querySelector(`#h-goed-${hi}`).disabled = true;
-      rondeResultaten[hi] = { beantwoord: true, goed: false };
-      checkAllesHerhaling();
-    });
+  if (rondeResultaten[hi].beantwoord) return;
+  blok.querySelector(`#h-fout-${hi}`).classList.add('actief-fout');
+  blok.querySelector(`#h-goed-${hi}`).disabled = true;
+  rondeResultaten[hi] = { beantwoord: true, goed: false };
 
-    inhoud.appendChild(blok);
+  const vraagData = item.vraagData;
+  registreerAntwoord({
+    id: item.id,
+    vraag: vraagData.vraag,
+    type: vraagData.type || 'flashcard',
+    antwoordData: vraagData.type === 'multiplechoice'
+      ? { vraag: vraagData.vraag, opties: vraagData.opties, correcteIndex: vraagData.correcteIndex, gekozenIndex: -1 }
+      : { antwoord: vraagData.antwoord },
+    goed: false
   });
-}
+
+  checkAllesHerhaling();
+});
 
 function toonKlaarScherm() {
   document.getElementById('les-scherm').classList.remove('zichtbaar');
