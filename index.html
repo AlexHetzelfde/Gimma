@@ -154,20 +154,30 @@
 
     <div id="categorie-overzicht" class="categorie-overzicht" style="display:none"></div>
 
-    <button class="knop-primair" id="knop-les" onclick="maakLes()" style="display:none">
-      Maak les van vandaag
-    </button>
+        <!-- ═══ NIEUWE HOME-KNOPPEN ═══ -->
+    <div class="home-knoppen-wrap" id="home-knoppen-wrap" style="display:none">
+      <button class="home-knop home-knop-smart" id="knop-smart" onclick="startSmartSession()">
+        <span class="home-knop-icoon">🧠</span>
+        <span class="home-knop-titel">Smart Session</span>
+        <span class="home-knop-sub" id="smart-sub"></span>
+      </button>
 
-    <div id="status-wrap">
-      <div id="status-tekst">Bezig...</div>
-      <div class="laadbalk-bg">
-        <div class="laadbalk-voortgang" id="laadbalk"></div>
-        <div class="laadbalk-shimmer" id="laadbalk-shimmer" style="display:none"></div>
-      </div>
+      <button class="home-knop home-knop-vault" id="knop-vault" onclick="startVaultPractice()">
+        <span class="home-knop-icoon">🔐</span>
+        <span class="home-knop-titel">Vault Practice</span>
+        <span class="home-knop-sub" id="vault-sub"></span>
+      </button>
+
+      <button class="home-knop home-knop-les" id="knop-les-nieuw" onclick="startLesVanVandaag()">
+        <span class="home-knop-icoon">📖</span>
+        <span class="home-knop-titel">Les van de dag</span>
+        <span class="home-knop-sub" id="les-sub"></span>
+      </button>
     </div>
 
-    <div id="fout-wrap"></div>
-  </div>
+    <!-- oude knop en cache-melding mogen weg, maar we laten de cache-melding-elementen staan voor compatibiliteit, we verbergen ze -->
+    <div id="cache-melding" style="display:none"></div>
+    <button class="knop-primair" id="knop-les" style="display:none">Maak les van vandaag</button>
 
   <!-- ═══ LES SCHERM ═══ -->
   <div id="les-scherm">
