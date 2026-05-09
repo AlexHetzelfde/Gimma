@@ -177,7 +177,17 @@
 
     <!-- oude knop en cache-melding mogen weg, maar we laten de cache-melding-elementen staan voor compatibiliteit, we verbergen ze -->
     <div id="cache-melding" style="display:none"></div>
-        <button class="knop-primair" id="knop-les" style="display:none">Maak les van vandaag</button>
+            <!-- oude knop -->
+    <button class="knop-primair" id="knop-les" style="display:none">Maak les van vandaag</button>
+
+    <div id="status-wrap">
+      <div id="status-tekst">Bezig...</div>
+      <div class="laadbalk-bg">
+        <div class="laadbalk-voortgang" id="laadbalk"></div>
+        <div class="laadbalk-shimmer" id="laadbalk-shimmer" style="display:none"></div>
+      </div>
+    </div>
+
   </div><!-- /homescreen -->
 
   <!-- ═══ LES SCHERM ═══ -->
