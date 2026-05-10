@@ -703,7 +703,7 @@ async function startVaultPractice() {
 async function startLesVanVandaag() {
   const dueItems = await getDueItems();
   pendingSR = dueItems.length > 0 ? dueItems : [];
-  await maakLes();
+  await toonArtikelKiezer();
 }
 
 // ════════════════════════════════════════
@@ -1132,8 +1132,9 @@ async function haalUitgelichtArtikel() {
   return titel;
 }
 
-async function haalVolledigeTekst(titel) {
-  const url = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titel)}&prop=extracts&explaintext=true&format=json&origin=*`;
+async function haalVolledigeTekst(titel, taal = 'en') {
+  const base = taal === 'nl' ? 'https://nl.wikipedia.org' : 'https://en.wikipedia.org';
+  const url = `${base}/w/api.php?action=query&titles=${encodeURIComponent(titel)}&prop=extracts&explaintext=true&format=json&origin=*`;
   const res  = await fetch(url);
   if (!res.ok) throw new Error('Kon het artikel niet ophalen');
   const data = await res.json();
@@ -1145,10 +1146,11 @@ async function haalVolledigeTekst(titel) {
 // ════════════════════════════════════════
 // WIKIPEDIA — AFBEELDINGEN OPHALEN (English)
 // ════════════════════════════════════════
-async function haalAfbeeldingen(titel) {
+async function haalAfbeeldingen(titel, taal = 'en') {
+  const base = taal === 'nl' ? 'https://nl.wikipedia.org' : 'https://en.wikipedia.org';
   try {
     const res = await fetch(
-      `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titel)}&prop=images&imlimit=30&format=json&origin=*`
+      `${base}/w/api.php?action=query&titles=${encodeURIComponent(titel)}&prop=images&imlimit=30&format=json&origin=*`
     );
     if (!res.ok) return [];
     const data = await res.json();
@@ -1171,7 +1173,7 @@ async function haalAfbeeldingen(titel) {
 
     const titelsParam = bestandsnamen.join('|');
     const infoRes = await fetch(
-      `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titelsParam)}&prop=imageinfo&iiprop=url|size|extmetadata&iiurlwidth=720&format=json&origin=*`
+      `${base}/w/api.php?action=query&titles=${encodeURIComponent(titelsParam)}&prop=imageinfo&iiprop=url|size|extmetadata&iiurlwidth=720&format=json&origin=*`
     );
     if (!infoRes.ok) return [];
     const infoData = await infoRes.json();
@@ -1251,13 +1253,13 @@ async function geminiCall(key, prompt) {
   }
 }
 
-async function verwerkTekstMetGemini(titel, tekst) {
+async function verwerkTekstMetGemini(titel, tekst, taal = 'en') {
   const key  = await haalKey();
   const cats = await haalCategorieën();
 
   let afbeeldingen = [];
   try {
-    afbeeldingen = await haalAfbeeldingen(titel);
+    afbeeldingen = await haalAfbeeldingen(titel, taal);
   } catch (e) {
     console.warn('Afbeeldingen ophalen mislukt, ga door zonder:', e);
   }
@@ -1276,11 +1278,15 @@ async function verwerkTekstMetGemini(titel, tekst) {
     ? `BESCHIKBARE AFBEELDINGEN UIT DIT ARTIKEL:\n${afbeeldingen.map(a => `• "${a.naam}": ${a.beschrijving}`).join('\n')}\n\nAFBEELDING REGELS:\n- Voeg per sectie MAXIMAAL ÉÉN afbeelding toe\n- ALLEEN als de sectietekst een visueel concept uitlegt waarbij een foto begripsvorming significant verbetert\n- Denk aan: architectonische onderdelen, anatomie, geografische structuren, historische objecten, technische schema's, biologische soorten, kunstwerken, kaarten\n- NIET gebruiken voor: portretten, algemene sfeerbeelden, niet-visuele concepten (politiek, filosofie, etc.)\n- De waarde van "afbeelding" moet EXACT een bestandsnaam uit de lijst hierboven zijn\n- Als geen afbeelding passend is: gebruik null`
     : 'Er zijn geen geschikte afbeeldingen beschikbaar voor dit artikel. Gebruik altijd null voor het afbeelding-veld.';
 
-  const prompt = `Je bent een professionele schrijver die Engelstalige Wikipedia-artikelen omzet naar heldere, boeiende Nederlandstalige lessen.
+  const bronTaalTekst = taal === 'nl'
+    ? `De brontekst is in het Nederlands. Herschrijf de inhoud in helder, journalistiek Nederlands. Je hoeft niet te vertalen.`
+    : `De brontekst is in het Engels. Schrijf ALLE output — sectietitels, sectieteksten, tijdlijnen — uitsluitend in correct, vloeiend Nederlands. Vertaal en herschrijf de inhoud; kopieer nooit Engelse zinnen letterlijk over.`;
 
-Je krijgt het Engelstalige Wikipedia-artikel: "${titel}"
+  const prompt = `Je bent een professionele schrijver die Wikipedia-artikelen omzet naar heldere, boeiende Nederlandstalige lessen.
 
-TAAL: De brontekst is in het Engels. Schrijf ALLE output — sectietitels, sectieteksten, tijdlijnen — uitsluitend in correct, vloeiend Nederlands. Vertaal en herschrijf de inhoud; kopieer nooit Engelse zinnen letterlijk over.
+Je krijgt het Wikipedia-artikel: "${titel}"
+
+TAAL: ${bronTaalTekst}
 
 JOUW TAAK:
 1. Bepaal hoeveel secties nodig zijn (minimaal 3, maximaal 6) op basis van de lengte en complexiteit van het artikel
@@ -1403,8 +1409,8 @@ ${JSON.stringify(sectiesVoorVragen, null, 2)}`;
   return await geminiCall(key, prompt);
 }
 
-async function verwerkMetGemini(titel, tekst) {
-  const tekstResultaat = await verwerkTekstMetGemini(titel, tekst);
+async function verwerkMetGemini(titel, tekst, taal = 'en') {
+  const tekstResultaat = await verwerkTekstMetGemini(titel, tekst, taal);
 
   if (!tekstResultaat.secties || tekstResultaat.secties.length === 0) {
     throw new Error('Gemini kon het artikel niet in secties opdelen. Probeer het opnieuw.');
@@ -1440,34 +1446,45 @@ async function verwerkMetGemini(titel, tekst) {
 let lesData      = null;
 let artikelTitel = '';
 
-async function maakLes() {
+async function maakLes(gekozenArtikel = null) {
   document.getElementById('knop-les').disabled = true;
   document.getElementById('fout-wrap').innerHTML = '';
 
-  const cache = await haalGecachedeLes();
-  if (cache) {
-    lesData      = { secties: cache.secties };
-    artikelTitel = cache.titel;
+  // Als er geen gekozen artikel is, gebruik cache van vandaag
+  if (!gekozenArtikel) {
+    const cache = await haalGecachedeLes();
+    if (cache) {
+      lesData      = { secties: cache.secties };
+      artikelTitel = cache.titel;
 
-    huidigeCategorieKleur = cache.categorieKleur || '#c8a96e';
-    huidigeCategorieNaam  = cache.categorie || '';
-    pasCategorieKleurToe(huidigeCategorieKleur);
+      huidigeCategorieKleur = cache.categorieKleur || '#c8a96e';
+      huidigeCategorieNaam  = cache.categorie || '';
+      pasCategorieKleurToe(huidigeCategorieKleur);
 
-    await startLes();
-    return;
+      await startLes();
+      return;
+    }
   }
 
   try {
-    setStatus('Wikipedia hoofdpagina ophalen...', 10);
-    const naam = await haalUitgelichtArtikel();
+    const taal = gekozenArtikel ? (gekozenArtikel.taal || 'en') : 'en';
+    let naamVoorOphalen;
 
-    setStatus(`"${naam}" ophalen...`, 22);
-    const { titel, tekst } = await haalVolledigeTekst(naam);
+    if (gekozenArtikel) {
+      naamVoorOphalen = gekozenArtikel.titel;
+      setStatus(`"${naamVoorOphalen}" ophalen...`, 10);
+    } else {
+      setStatus('Wikipedia hoofdpagina ophalen...', 10);
+      naamVoorOphalen = await haalUitgelichtArtikel();
+    }
+
+    setStatus(`"${naamVoorOphalen}" ophalen...`, 22);
+    const { titel, tekst } = await haalVolledigeTekst(naamVoorOphalen, taal);
     artikelTitel = titel;
 
     setStatus('Artikel en afbeeldingen verwerken...', 35, true);
     startSchijnVoortgang(35, 62);
-    lesData = await verwerkMetGemini(titel, tekst);
+    lesData = await verwerkMetGemini(titel, tekst, taal);
 
     stopSchijnVoortgang();
 
@@ -2234,7 +2251,241 @@ function toonKlaarSchermFinal() {
   markSessionDone();
 }
 
+// ════════════════════════════════════════
+// ARTIKEL KIEZER
+// ════════════════════════════════════════
 
+const AK_BRONNEN = [
+  { label: '🇬🇧 Engels uitgelicht',    emoji: '🌟', taal: 'en', haalTitel: () => haalUitgelichtArtikel() },
+  { label: '🇳🇱 Nederlands uitgelicht', emoji: '🇳🇱', taal: 'nl', haalTitel: () => haalNlUitgelicht() },
+  { label: '🏛️ Geschiedenis',           emoji: '🏛️', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Geschiedenis') },
+  { label: '🔬 Biologie',               emoji: '🔬', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Biologie') },
+  { label: '🌍 Geografie',              emoji: '🌍', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Geografie') },
+  { label: '🎨 Kunst & cultuur',        emoji: '🎨', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Kunst') },
+  { label: '🔭 Sterrenkunde',           emoji: '🔭', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Astronomie') },
+  { label: '🎲 Willekeurig',            emoji: '🎲', taal: 'nl', haalTitel: () => haalNlWillekeurig() },
+];
+
+let akHuidigeIndex = 0;
+let akArtikelenData = [];   // opgehaalde previews per kaart
+let akGekozenArtikel = null;
+
+// Toont de modal en laadt alle kaarten
+async function toonArtikelKiezer() {
+  akHuidigeIndex  = 0;
+  akArtikelenData = AK_BRONNEN.map(() => ({ status: 'laden' }));
+  akGekozenArtikel = null;
+
+  document.getElementById('artikel-kiezer-modal').classList.add('zichtbaar');
+  akRenderAlles();
+
+  // Laad alle artikelpreviews parallel
+  AK_BRONNEN.forEach((bron, i) => {
+    haalArtikelPreview(bron).then(data => {
+      akArtikelenData[i] = { status: 'gereed', ...data, taal: bron.taal, label: bron.label };
+      akRenderKaart(i);
+    }).catch(() => {
+      akArtikelenData[i] = { status: 'fout', label: bron.label, emoji: bron.emoji };
+      akRenderKaart(i);
+    });
+  });
+}
+
+function sluitArtikelKiezer() {
+  document.getElementById('artikel-kiezer-modal').classList.remove('zichtbaar');
+}
+
+// Haalt titel + intro + thumbnail op voor een bron
+async function haalArtikelPreview(bron) {
+  const titel = await bron.haalTitel();
+  const taal  = bron.taal || 'en';
+  const base  = taal === 'nl' ? 'https://nl.wikipedia.org' : 'https://en.wikipedia.org';
+
+  // Intro tekst
+  const textRes = await fetch(
+    `${base}/w/api.php?action=query&titles=${encodeURIComponent(titel)}&prop=extracts&exintro=true&explaintext=true&exsentences=3&format=json&origin=*`
+  );
+  const textData = await textRes.json();
+  const page = Object.values(textData.query.pages)[0];
+  const intro = (page?.extract || '').slice(0, 220);
+
+  // Thumbnail
+  const imgRes = await fetch(
+    `${base}/w/api.php?action=query&titles=${encodeURIComponent(titel)}&prop=pageimages&pithumbsize=480&format=json&origin=*`
+  );
+  const imgData = await imgRes.json();
+  const imgPage = Object.values(imgData.query.pages)[0];
+  const thumbnail = imgPage?.thumbnail?.source || null;
+
+  return { titel, intro, thumbnail, emoji: bron.emoji, label: bron.label };
+}
+
+// Haalt het uitgelichte artikel van de Nederlandse Wikipedia hoofdpagina
+async function haalNlUitgelicht() {
+  const res = await fetch(
+    'https://nl.wikipedia.org/w/api.php?action=parse&page=Hoofdpagina&prop=text&format=json&origin=*'
+  );
+  if (!res.ok) throw new Error('Hoofdpagina niet bereikbaar');
+  const data = await res.json();
+  const doc = new DOMParser().parseFromString(data.parse.text['*'], 'text/html');
+
+  // Probeer de uitgelicht-sectie te vinden
+  const sectiePogingen = ['#mf-uitgelicht', '.mp-uitgelicht', '#mp-itn', '.uitgelicht'];
+  let link = null;
+  for (const sel of sectiePogingen) {
+    const el = doc.querySelector(sel);
+    if (el) {
+      link = el.querySelector('a[href^="/wiki/"]:not([href*=":"])');
+      if (link) break;
+    }
+  }
+  // Fallback: eerste prominente link op de pagina
+  if (!link) {
+    for (const l of doc.querySelectorAll('b a[href^="/wiki/"]:not([href*=":"])')) {
+      const t = l.getAttribute('href').replace('/wiki/', '');
+      if (t && t !== 'Hoofdpagina' && l.textContent.length > 4) { link = l; break; }
+    }
+  }
+  if (!link) throw new Error('Geen uitgelicht artikel gevonden op NL Wikipedia');
+  return decodeURIComponent(link.getAttribute('href').replace('/wiki/', '').replace(/_/g, ' '));
+}
+
+// Haalt een willekeurig artikel uit een Nederlandse Wikipedia categorie
+async function haalNlCategorieArtikel(categorie) {
+  const res = await fetch(
+    `https://nl.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Categorie:${encodeURIComponent(categorie)}&cmlimit=50&cmtype=page&format=json&origin=*`
+  );
+  if (!res.ok) throw new Error('Categorie niet bereikbaar');
+  const data = await res.json();
+  const leden = data?.query?.categorymembers;
+  if (!leden || leden.length === 0) {
+    // Fallback: willekeurig artikel
+    return await haalNlWillekeurig();
+  }
+  return leden[Math.floor(Math.random() * leden.length)].title;
+}
+
+// Willekeurig Nederlands Wikipedia artikel
+async function haalNlWillekeurig() {
+  const res = await fetch(
+    'https://nl.wikipedia.org/w/api.php?action=query&list=random&rnnamespace=0&rnlimit=1&format=json&origin=*'
+  );
+  if (!res.ok) throw new Error('Willekeurig artikel niet bereikbaar');
+  const data = await res.json();
+  const titel = data?.query?.random?.[0]?.title;
+  if (!titel) throw new Error('Geen willekeurig artikel ontvangen');
+  return titel;
+}
+
+// ── Carousel rendering ──
+
+function akRenderAlles() {
+  const carousel = document.getElementById('ak-carousel');
+  const dotsWrap  = document.getElementById('ak-dots');
+
+  // Maak kaart-slots aan (allemaal "laden" to start)
+  carousel.innerHTML = '';
+  dotsWrap.innerHTML = '';
+
+  AK_BRONNEN.forEach((bron, i) => {
+    const kaart = document.createElement('div');
+    kaart.className = 'ak-kaart';
+    kaart.id = `ak-kaart-${i}`;
+    kaart.innerHTML = `
+      <div class="ak-kaart-laden">
+        <div class="ak-laden-spinner"></div>
+        <span>${bron.label}</span>
+      </div>`;
+    carousel.appendChild(kaart);
+
+    const dot = document.createElement('button');
+    dot.className = 'ak-dot' + (i === 0 ? ' actief' : '');
+    dot.setAttribute('aria-label', `Ga naar kaart ${i + 1}`);
+    dot.onclick = () => akGaNaar(i);
+    dotsWrap.appendChild(dot);
+  });
+
+  akUpdatePositie();
+}
+
+function akRenderKaart(i) {
+  const el   = document.getElementById(`ak-kaart-${i}`);
+  if (!el) return;
+  const data = akArtikelenData[i];
+
+  if (data.status === 'fout') {
+    el.innerHTML = `
+      <div class="ak-kaart-afbeelding-placeholder">${data.emoji || '❓'}</div>
+      <div class="ak-kaart-body">
+        <div class="ak-kaart-bron">${data.label}</div>
+        <div class="ak-kaart-fout">Kon dit artikel niet laden. Probeer een andere optie.</div>
+      </div>`;
+    return;
+  }
+
+  const afbeeldingHtml = data.thumbnail
+    ? `<img class="ak-kaart-afbeelding" src="${data.thumbnail}" alt="${data.titel}" loading="lazy" onerror="this.style.display='none'">`
+    : `<div class="ak-kaart-afbeelding-placeholder">${data.emoji || '📖'}</div>`;
+
+  el.innerHTML = `
+    ${afbeeldingHtml}
+    <div class="ak-kaart-body">
+      <div class="ak-kaart-bron">${data.label}</div>
+      <div class="ak-kaart-titel">${data.titel}</div>
+      <div class="ak-kaart-intro">${data.intro || 'Geen samenvatting beschikbaar.'}</div>
+    </div>`;
+}
+
+function akUpdatePositie() {
+  const carousel = document.getElementById('ak-carousel');
+  if (carousel) carousel.style.transform = `translateX(-${akHuidigeIndex * 100}%)`;
+
+  // Dots bijwerken
+  document.querySelectorAll('.ak-dot').forEach((dot, i) => {
+    dot.classList.toggle('actief', i === akHuidigeIndex);
+  });
+
+  // Pijlen in-/uitschakelen
+  const links  = document.getElementById('ak-pijl-links');
+  const rechts = document.getElementById('ak-pijl-rechts');
+  if (links)  links.disabled  = akHuidigeIndex === 0;
+  if (rechts) rechts.disabled = akHuidigeIndex === AK_BRONNEN.length - 1;
+}
+
+function akVorige() {
+  if (akHuidigeIndex > 0) { akHuidigeIndex--; akUpdatePositie(); }
+}
+
+function akVolgende() {
+  if (akHuidigeIndex < AK_BRONNEN.length - 1) { akHuidigeIndex++; akUpdatePositie(); }
+}
+
+function akGaNaar(i) {
+  akHuidigeIndex = i;
+  akUpdatePositie();
+}
+
+// Start de les met het gekozen artikel
+async function akStartLes() {
+  const data = akArtikelenData[akHuidigeIndex];
+  if (!data || data.status === 'laden') {
+    toonToast('Even geduld, artikel wordt geladen...');
+    return;
+  }
+  if (data.status === 'fout') {
+    toonToast('Dit artikel kon niet geladen worden. Kies een andere optie.');
+    return;
+  }
+
+  sluitArtikelKiezer();
+
+  // Wis cache van vandaag zodat het nieuwe artikel gegenereerd wordt
+  await dbDelete(vandaagSleutel());
+  await verwijderVoortgang();
+
+  // Start les met het gekozen artikel
+  await maakLes({ titel: data.titel, taal: data.taal || 'en' });
+}
 
 // ════════════════════════════════════════
 // START — async bootstrap
