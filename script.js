@@ -2358,43 +2358,64 @@ async function haalNlUitgelicht() {
 // Haalt een willekeurig artikel uit een Nederlandse Wikipedia categorie
 // Haalt een willekeurig artikel uit een Nederlandse Wikipedia categorie
 // categorieNaam = exacte Wikipedia categorienaam, zoekterm = fallback zoekwoord
+// Haalt een willekeurig artikel via subcategorieën of zoekAPI
 async function haalNlCategorieArtikel(categorieNaam, zoekterm) {
-  // Poging 1: directe categorieleden ophalen
+  // Stap 1: directe artikelen in de categorie
   try {
     const res = await fetch(
-      `https://nl.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Categorie:${encodeURIComponent(categorieNaam)}&cmlimit=50&cmnamespace=0&cmtype=page&format=json&origin=*`
+      `https://nl.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Categorie:${encodeURIComponent(categorieNaam)}&cmlimit=500&cmnamespace=0&cmtype=page&format=json&origin=*`
     );
     if (res.ok) {
       const data = await res.json();
-      const leden = data?.query?.categorymembers;
-      if (leden && leden.length > 0) {
+      const leden = data?.query?.categorymembers || [];
+      if (leden.length > 0) {
         return leden[Math.floor(Math.random() * leden.length)].title;
       }
     }
-  } catch (e) {
-    console.warn('Categorie direct ophalen mislukt:', e);
-  }
+  } catch (e) { console.warn('Stap 1 mislukt:', e); }
 
-  // Poging 2: zoeken via de Wikipedia zoek-API
+  // Stap 2: willekeurige subcategorie induiken
+  try {
+    const subRes = await fetch(
+      `https://nl.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Categorie:${encodeURIComponent(categorieNaam)}&cmlimit=30&cmtype=subcat&format=json&origin=*`
+    );
+    if (subRes.ok) {
+      const subData = await subRes.json();
+      const subcats = subData?.query?.categorymembers || [];
+      if (subcats.length > 0) {
+        const subcat = subcats[Math.floor(Math.random() * subcats.length)];
+        const subNaam = subcat.title.replace('Categorie:', '');
+        const artRes = await fetch(
+          `https://nl.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Categorie:${encodeURIComponent(subNaam)}&cmlimit=100&cmnamespace=0&cmtype=page&format=json&origin=*`
+        );
+        if (artRes.ok) {
+          const artData = await artRes.json();
+          const artikelen = artData?.query?.categorymembers || [];
+          if (artikelen.length > 0) {
+            return artikelen[Math.floor(Math.random() * artikelen.length)].title;
+          }
+        }
+      }
+    }
+  } catch (e) { console.warn('Stap 2 mislukt:', e); }
+
+  // Stap 3: zoek-API met willekeurige offset
   try {
     const zoek = zoekterm || categorieNaam;
+    const offset = Math.floor(Math.random() * 80);
     const res = await fetch(
-      `https://nl.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(zoek)}&srnamespace=0&srlimit=20&srwhat=text&format=json&origin=*`
+      `https://nl.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(zoek)}&srnamespace=0&srlimit=10&sroffset=${offset}&format=json&origin=*`
     );
     if (res.ok) {
       const data = await res.json();
-      const resultaten = data?.query?.search;
-      if (resultaten && resultaten.length > 0) {
-        // Sla de eerste (meest voor de hand liggende) over, pak er een willekeurige uit de top 10
-        const keuze = resultaten.slice(0, 10);
-        return keuze[Math.floor(Math.random() * keuze.length)].title;
+      const resultaten = data?.query?.search || [];
+      if (resultaten.length > 0) {
+        return resultaten[Math.floor(Math.random() * resultaten.length)].title;
       }
     }
-  } catch (e) {
-    console.warn('Zoeken mislukt, val terug op willekeurig:', e);
-  }
+  } catch (e) { console.warn('Stap 3 mislukt:', e); }
 
-  // Laatste redmiddel: volledig willekeurig artikel
+  // Laatste redmiddel
   return await haalNlWillekeurig();
 }
 
@@ -2416,13 +2437,12 @@ function akRenderAlles() {
   const carousel = document.getElementById('ak-carousel');
   const dotsWrap  = document.getElementById('ak-dots');
 
-  // Maak kaart-slots aan (allemaal "laden" to start)
   carousel.innerHTML = '';
   dotsWrap.innerHTML = '';
 
   AK_BRONNEN.forEach((bron, i) => {
     const kaart = document.createElement('div');
-    kaart.className = 'ak-kaart';
+    kaart.className = 'ak-kaart' + (i === 0 ? ' actief' : '');
     kaart.id = `ak-kaart-${i}`;
     kaart.innerHTML = `
       <div class="ak-kaart-laden">
@@ -2445,6 +2465,7 @@ function akRenderKaart(i) {
   const el   = document.getElementById(`ak-kaart-${i}`);
   if (!el) return;
   const data = akArtikelenData[i];
+  const wasActief = el.classList.contains('actief');
 
   if (data.status === 'fout') {
     el.innerHTML = `
@@ -2453,25 +2474,29 @@ function akRenderKaart(i) {
         <div class="ak-kaart-bron">${data.label}</div>
         <div class="ak-kaart-fout">Kon dit artikel niet laden. Probeer een andere optie.</div>
       </div>`;
-    return;
+  } else {
+    const afbeeldingHtml = data.thumbnail
+      ? `<img class="ak-kaart-afbeelding" src="${data.thumbnail}" alt="${data.titel}" loading="lazy" onerror="this.style.display='none'">`
+      : `<div class="ak-kaart-afbeelding-placeholder">${data.emoji || '📖'}</div>`;
+
+    el.innerHTML = `
+      ${afbeeldingHtml}
+      <div class="ak-kaart-body">
+        <div class="ak-kaart-bron">${data.label}</div>
+        <div class="ak-kaart-titel">${data.titel}</div>
+        <div class="ak-kaart-intro">${data.intro || 'Geen samenvatting beschikbaar.'}</div>
+      </div>`;
   }
 
-  const afbeeldingHtml = data.thumbnail
-    ? `<img class="ak-kaart-afbeelding" src="${data.thumbnail}" alt="${data.titel}" loading="lazy" onerror="this.style.display='none'">`
-    : `<div class="ak-kaart-afbeelding-placeholder">${data.emoji || '📖'}</div>`;
-
-  el.innerHTML = `
-    ${afbeeldingHtml}
-    <div class="ak-kaart-body">
-      <div class="ak-kaart-bron">${data.label}</div>
-      <div class="ak-kaart-titel">${data.titel}</div>
-      <div class="ak-kaart-intro">${data.intro || 'Geen samenvatting beschikbaar.'}</div>
-    </div>`;
+  // Herstel zichtbaarheid
+  if (wasActief) el.classList.add('actief');
 }
 
 function akUpdatePositie() {
-  const carousel = document.getElementById('ak-carousel');
-  if (carousel) carousel.style.transform = `translateX(-${akHuidigeIndex * 100}%)`;
+  // Toon alleen de actieve kaart
+  document.querySelectorAll('.ak-kaart').forEach((kaart, i) => {
+    kaart.classList.toggle('actief', i === akHuidigeIndex);
+  });
 
   // Dots bijwerken
   document.querySelectorAll('.ak-dot').forEach((dot, i) => {
