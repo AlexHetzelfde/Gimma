@@ -2256,14 +2256,19 @@ function toonKlaarSchermFinal() {
 // ════════════════════════════════════════
 
 const AK_BRONNEN = [
-  { label: '🇬🇧 Engels uitgelicht',    emoji: '🌟', taal: 'en', haalTitel: () => haalUitgelichtArtikel() },
-  { label: '🇳🇱 Nederlands uitgelicht', emoji: '🇳🇱', taal: 'nl', haalTitel: () => haalNlUitgelicht() },
-  { label: '🏛️ Geschiedenis',           emoji: '🏛️', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Geschiedenis') },
-  { label: '🔬 Biologie',               emoji: '🔬', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Biologie') },
-  { label: '🌍 Geografie',              emoji: '🌍', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Geografie') },
-  { label: '🎨 Kunst & cultuur',        emoji: '🎨', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Kunst') },
-  { label: '🔭 Sterrenkunde',           emoji: '🔭', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Astronomie') },
-  { label: '🎲 Willekeurig',            emoji: '🎲', taal: 'nl', haalTitel: () => haalNlWillekeurig() },
+  { label: '🌟 Engels uitgelicht',         emoji: '🌟', taal: 'en', haalTitel: () => haalUitgelichtArtikel() },
+  { label: '🇳🇱 Nederlands uitgelicht',    emoji: '🇳🇱', taal: 'nl', haalTitel: () => haalNlUitgelicht() },
+  { label: '🔬 Biologie',                  emoji: '🔬', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Biologie', 'Biologie') },
+  { label: '🏛️ Geschiedenis',              emoji: '🏛️', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Geschiedenis', 'Geschiedenis') },
+  { label: '🎨 Kunst & cultuur',           emoji: '🎨', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Kunst en cultuur', 'Kunst') },
+  { label: '🌍 Landen & volken',           emoji: '🌍', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Landen en volken', 'geografie') },
+  { label: '👥 Mens & maatschappij',       emoji: '👥', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Samenleving', 'maatschappij') },
+  { label: '🗳️ Politiek',                  emoji: '🗳️', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Politiek', 'politiek') },
+  { label: '🕌 Religie',                   emoji: '🕌', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Religie', 'religie') },
+  { label: '⚽ Sport',                     emoji: '⚽', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Sport', 'sport') },
+  { label: '💬 Taal',                      emoji: '💬', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Taalkunde', 'taal') },
+  { label: '🔭 Wetenschap & technologie',  emoji: '🔭', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Wetenschap', 'wetenschap technologie') },
+  { label: '🎲 Willekeurig',               emoji: '🎲', taal: 'nl', haalTitel: () => haalNlWillekeurig() },
 ];
 
 let akHuidigeIndex = 0;
@@ -2351,18 +2356,46 @@ async function haalNlUitgelicht() {
 }
 
 // Haalt een willekeurig artikel uit een Nederlandse Wikipedia categorie
-async function haalNlCategorieArtikel(categorie) {
-  const res = await fetch(
-    `https://nl.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Categorie:${encodeURIComponent(categorie)}&cmlimit=50&cmtype=page&format=json&origin=*`
-  );
-  if (!res.ok) throw new Error('Categorie niet bereikbaar');
-  const data = await res.json();
-  const leden = data?.query?.categorymembers;
-  if (!leden || leden.length === 0) {
-    // Fallback: willekeurig artikel
-    return await haalNlWillekeurig();
+// Haalt een willekeurig artikel uit een Nederlandse Wikipedia categorie
+// categorieNaam = exacte Wikipedia categorienaam, zoekterm = fallback zoekwoord
+async function haalNlCategorieArtikel(categorieNaam, zoekterm) {
+  // Poging 1: directe categorieleden ophalen
+  try {
+    const res = await fetch(
+      `https://nl.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Categorie:${encodeURIComponent(categorieNaam)}&cmlimit=50&cmnamespace=0&cmtype=page&format=json&origin=*`
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const leden = data?.query?.categorymembers;
+      if (leden && leden.length > 0) {
+        return leden[Math.floor(Math.random() * leden.length)].title;
+      }
+    }
+  } catch (e) {
+    console.warn('Categorie direct ophalen mislukt:', e);
   }
-  return leden[Math.floor(Math.random() * leden.length)].title;
+
+  // Poging 2: zoeken via de Wikipedia zoek-API
+  try {
+    const zoek = zoekterm || categorieNaam;
+    const res = await fetch(
+      `https://nl.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(zoek)}&srnamespace=0&srlimit=20&srwhat=text&format=json&origin=*`
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const resultaten = data?.query?.search;
+      if (resultaten && resultaten.length > 0) {
+        // Sla de eerste (meest voor de hand liggende) over, pak er een willekeurige uit de top 10
+        const keuze = resultaten.slice(0, 10);
+        return keuze[Math.floor(Math.random() * keuze.length)].title;
+      }
+    }
+  } catch (e) {
+    console.warn('Zoeken mislukt, val terug op willekeurig:', e);
+  }
+
+  // Laatste redmiddel: volledig willekeurig artikel
+  return await haalNlWillekeurig();
 }
 
 // Willekeurig Nederlands Wikipedia artikel
