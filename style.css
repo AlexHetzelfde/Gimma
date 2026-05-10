@@ -2185,17 +2185,25 @@ body.layout-telefoon .knop-flashcard-goed {
 }
 
 .ak-carousel {
-  display: flex;
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  display: block;
 }
 
 .ak-kaart {
-  min-width: 100%;
+  display: none;
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: 16px;
   overflow: hidden;
-  flex-shrink: 0;
+}
+
+.ak-kaart.actief {
+  display: block;
+  animation: ak-fade-in 0.28s ease;
+}
+
+@keyframes ak-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .ak-kaart-afbeelding {
