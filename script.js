@@ -263,7 +263,9 @@ function herstelLayout() {
 // ════════════════════════════════════════
 let toastTimer = null;
 let pendingSR = [];            // items die aan het eind van de les nog herhaald moeten worden
-let smartActive = false;       // vlag voor smart session loop
+let smartActive = false;   
+let srCallback = null;
+let srVervolgTekst = 'Doorgaan naar les →';// vlag voor smart session loop
 
 function toonToast(tekst, duur = 2500) {
   const el = document.getElementById('toast');
@@ -296,9 +298,12 @@ async function renderStats() {
       <span style="color:var(--muted);font-size:0.78rem">Langste: ${streakData.langste} dag${streakData.langste !== 1 ? 'en' : ''}</span>
     </div>` : '';
 
-  el.innerHTML = `
-    ${streakHtml}
-    <div class="stats-hero"><div class="stats-leeg">🌱 Nog geen data — maak je eerste les om je voortgang bij te houden.</div>`;
+    if (totaal === 0) {
+    el.innerHTML = `
+      ${streakHtml}
+      <div class="stats-hero">
+        <div class="stats-leeg">🌱 Nog geen data — maak je eerste les om je voortgang bij te houden.</div>
+      </div>`;
     return;
   }
 
@@ -673,7 +678,7 @@ async function init() {
 // HOMESCREEN
 // ════════════════════════════════════════
 async function toonHomescreen() {
-  await pasCategorieKleurToe('#ed5b36');
+  pasCategorieKleurToe('#ed5b36');
   document.getElementById('key-scherm').classList.remove('zichtbaar');
   document.getElementById('key-knop-header').style.display = 'flex';
   document.getElementById('homescreen').classList.add('zichtbaar');
@@ -782,6 +787,8 @@ async function startSmartSession() {
   
   if (dueItems.length > 0) {
     smartActive = true;
+        srVervolgTekst = 'Doorgaan naar les →';
+    srCallback = null;   // of eventueel een callback als je later les wil starten
     toonSRReview(dueItems);
   } else if (!lesVoltooid) {
     await maakLes();
@@ -793,6 +800,8 @@ async function startVaultPractice() {
   const dueItems = await getDueItems();
   if (dueItems.length > 0) {
     smartActive = false;
+        srVervolgTekst = 'Terug naar home →';
+    srCallback = null;   // gewone afronding
     toonSRReview(dueItems);
   }
 }
@@ -902,8 +911,13 @@ function toonSRReview(dueItems) {
       } else {
         scoreEl.innerHTML = `<strong>Alles onthouden!</strong> Na ${rondeNummer} rondes alles goed. 💪`;
       }
-      const klaarBalk = document.getElementById('sr-klaar-balk');
-      klaarBalk.style.display = 'flex';
+            const knop = document.querySelector('#sr-klaar-balk .knop-primair');
+      if (knop) knop.textContent = srVervolgTekst;
+      if (typeof srCallback === 'function') {
+        setTimeout(() => { const cb = srCallback; srCallback = null; cb(); }, 600);
+      } else {
+        document.getElementById('sr-klaar-balk').style.display = 'flex';
+      }
       window.scrollTo({ top: wrap.offsetTop - 40, behavior: 'smooth' });
     }
   }
@@ -1582,8 +1596,9 @@ let lesData      = null;
 let artikelTitel = '';
 
 async function maakLes(gekozenArtikel = null) {
-  document.getElementById('knop-les').disabled = true;
   document.getElementById('fout-wrap').innerHTML = '';
+  document.getElementById('homescreen').classList.add('zichtbaar');
+  document.getElementById('key-scherm').classList.remove('zichtbaar');
 
   // Als er geen gekozen artikel is, gebruik cache van vandaag
   if (!gekozenArtikel) {
@@ -1817,6 +1832,10 @@ function toonSectie(index) {
   tijdlijnWrap.style.display = (sectie.tijdlijn && sectie.tijdlijn.length > 0) ? 'block' : 'none';
 
   document.getElementById('knop-gelezen-wrap').style.display      = 'block';
+    const knopGelezen = document.querySelector('#knop-gelezen-wrap .knop-gelezen');
+  const heeftVragen = sectie.vragen && sectie.vragen.length > 0;
+  knopGelezen.textContent = heeftVragen ? 'Ik heb dit gelezen →' : 'Volgende sectie →';
+  knopGelezen.onclick = heeftVragen ? () => toonVraag(0) : volgendeSectie;
   document.getElementById('vragen-sectie').style.display           = 'none';
   document.getElementById('terug-naar-vraag-balk').style.display   = 'none';
   document.getElementById('knop-volgende').disabled                = true;
@@ -2349,17 +2368,12 @@ function toonHerhalingsRonde() {
   });
 }
 
-function toonKlaarScherm() {
   if (pendingSR && pendingSR.length > 0) {
     const items = pendingSR;
     pendingSR = [];
     smartActive = false;
-    // Tijdelijk afrondSRReview overschrijven zodat na SR het klaarscherm komt
-    const origAfrond = afrondSRReview;
-    afrondSRReview = async () => {
-      afrondSRReview = origAfrond; // herstel
-      toonKlaarSchermFinal();      // nu echt klaar
-    };
+    srCallback = () => { toonKlaarSchermFinal(); };
+    srVervolgTekst = 'Doorgaan naar les →';  // voor de zekerheid
     toonSRReview(items);
     return;
   }
