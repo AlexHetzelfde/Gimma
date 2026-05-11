@@ -2344,3 +2344,28 @@ body.layout-telefoon .knop-flashcard-goed {
   .ak-kaart-afbeelding,
   .ak-kaart-afbeelding-placeholder { height: 130px; }
 }
+
+.kernpunt-blok {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 1.5rem;
+  padding: 0.9rem 1.1rem;
+  background: rgba(var(--les-kleur-rgb), 0.08);
+  border-left: 3px solid var(--les-kleur);
+  border-radius: 0 10px 10px 0;
+}
+.kernpunt-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--les-kleur);
+  font-weight: 700;
+}
+.kernpunt-tekst {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.92rem;
+  color: var(--muted);
+  line-height: 1.55;
+  font-style: italic;
+}
