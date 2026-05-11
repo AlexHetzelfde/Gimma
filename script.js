@@ -10,8 +10,6 @@ const LS_STREAK       = 'wikileer_streak';
 const LS_FEEDBACK     = 'wikileer_feedback';
 const MAX_TEKST       = 40000;
 
-const INTERVALS = [1, 2, 4, 7, 14, 30];
-
 // ════════════════════════════════════════
 // INDEXEDDB LAAG
 // ════════════════════════════════════════
@@ -426,18 +424,6 @@ function getEndOfDay() {
   return d.getTime();
 }
 
-// ════════════════════════════════════════
-// SR ALGORITME
-// ════════════════════════════════════════
-function getMaxStep(strength) {
-  if (strength < 20) return 0;
-  if (strength < 40) return 1;
-  if (strength < 60) return 2;
-  if (strength < 75) return 3;
-  if (strength < 90) return 4;
-  return 5;
-}
-
 async function lastSessionToday() {
   const val = await dbGet(LS_LAST_SESSION);
   return val === new Date().toISOString().slice(0, 10);
@@ -549,23 +535,20 @@ async function registreerAntwoord({ id, vraag, type, antwoordData, goed }) {
   const morgen = getTomorrow();
 
   if (idx === -1) {
-    const basisStrength = 20;
-    let strength      = goed ? Math.min(100, basisStrength + 10) : Math.max(0, Math.floor(basisStrength * 0.5));
-    let interval_step = 0;
-    let next_due      = morgen;
-
-    if (goed) {
-      interval_step = Math.min(1, getMaxStep(strength));
-      next_due      = now + INTERVALS[interval_step] * 24 * 60 * 60 * 1000;
-    }
+    // Nieuw item — begin met SM-2 defaults
+    const ef         = goed ? Math.max(1.3, 2.5 - 0.8) : Math.max(1.3, 2.5 - 0.2); // q=5 of q=0
+    const repetities = goed ? 1 : 0;
+    const interval   = goed ? 1 : 1;
+    const strength   = Math.min(100, Math.max(0, Math.round(repetities * 13 + (ef - 1.3) * 15)));
 
     sr.push({
       id, vraag, type,
       ...antwoordData,
       categorieKleur: huidigeCategorieKleur,
       categorieNaam:  huidigeCategorieNaam,
-      strength, interval_step, next_due,
+      ef, interval, repetities, strength,
       streak:    goed ? 1 : 0,
+      next_due:  goed ? now + interval * 86400000 : morgen,
       last_seen: now
     });
 
@@ -574,23 +557,40 @@ async function registreerAntwoord({ id, vraag, type, antwoordData, goed }) {
     Object.assign(item, antwoordData);
     item.last_seen = now;
 
+    // Migratie: vul SM-2 velden in voor oude items
+    if (item.ef == null) {
+      item.ef         = 2.5;
+      item.repetities = item.streak || 0;
+      item.interval   = [1, 2, 4, 7, 14, 30][Math.min(item.interval_step || 0, 5)];
+    }
+
     if (!item.categorieKleur && huidigeCategorieKleur) {
       item.categorieKleur = huidigeCategorieKleur;
       item.categorieNaam  = huidigeCategorieNaam;
     }
 
     if (goed) {
-      item.streak        = (item.streak || 0) + 1;
-      item.strength      = Math.min(100, (item.strength || 20) + 10);
-      const maxStap      = getMaxStep(item.strength);
-      item.interval_step = Math.min((item.interval_step || 0) + 1, maxStap);
-      item.next_due      = now + INTERVALS[item.interval_step] * 24 * 60 * 60 * 1000;
+      item.streak     = (item.streak || 0) + 1;
+      item.repetities = (item.repetities || 0) + 1;
+      // EF aanpassen (kwaliteit 5 = perfect)
+      item.ef = Math.max(1.3, item.ef + 0.1 - (5 - 5) * (0.08 + (5 - 5) * 0.02));
+
+      if      (item.repetities === 1) item.interval = 1;
+      else if (item.repetities === 2) item.interval = 6;
+      else    item.interval = Math.max(1, Math.round((item.interval || 1) * item.ef));
+
+      item.next_due = now + item.interval * 86400000;
     } else {
-      item.streak        = 0;
-      item.strength      = Math.max(0, Math.floor((item.strength || 20) * 0.5));
-      item.interval_step = 0;
-      item.next_due      = morgen;
+      item.streak     = 0;
+      item.ef         = Math.max(1.3, (item.ef || 2.5) - 0.2);
+      item.repetities = 0;
+      item.interval   = 1;
+      item.next_due   = morgen;
     }
+
+    item.strength = Math.min(100, Math.max(0,
+      Math.round((item.repetities || 0) * 13 + ((item.ef || 2.5) - 1.3) * 15)
+    ));
   }
 
   await slaSRDataOp(sr);
