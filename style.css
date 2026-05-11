@@ -2390,3 +2390,86 @@ body.layout-telefoon .knop-flashcard-goed {
   color: var(--text);
   font-weight: 600;
 }
+
+.feedback-wrap {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.feedback-duim-knop {
+  align-self: flex-start;
+  background: rgba(0,0,0,0.1);
+  border: none;
+  border-radius: 8px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: rgba(0,0,0,0.5);
+  transition: background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.feedback-duim-knop:hover:not(:disabled) {
+  background: rgba(0,0,0,0.2);
+  color: rgba(0,0,0,0.8);
+}
+
+.feedback-duim-knop.feedback-verstuurd {
+  color: #27ae60;
+  background: rgba(39,174,96,0.12);
+}
+
+.feedback-picker {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.feedback-picker-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.feedback-optie {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  text-align: left;
+  font-family: 'DM Sans', sans-serif;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.feedback-optie:hover {
+  border-color: var(--fout);
+  background: rgba(240,112,112,0.06);
+  color: var(--fout);
+}
+
+/* SR donkere variant */
+.sr-vragen-inhoud .feedback-duim-knop {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.sr-vragen-inhoud .feedback-duim-knop:hover:not(:disabled) {
+  border-color: var(--fout);
+  color: var(--fout);
+  background: var(--bg3);
+}
