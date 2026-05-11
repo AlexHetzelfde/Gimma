@@ -1604,6 +1604,13 @@ function vulSectieInhoud(si) {
     tekstEl.appendChild(p);
   });
 
+  if (sectie.kernpunt) {
+    const kp = document.createElement('div');
+    kp.className = 'kernpunt-blok';
+    kp.innerHTML = `<span class="kernpunt-label">💡 Kernpunt</span><span class="kernpunt-tekst">${sectie.kernpunt}</span>`;
+    tekstEl.appendChild(kp);
+  }
+  
   const tijdlijnInhoud = document.getElementById('tijdlijn-inhoud');
   tijdlijnInhoud.innerHTML = sectie.tijdlijn && sectie.tijdlijn.length > 0
     ? sectie.tijdlijn.map(t =>
@@ -2268,8 +2275,8 @@ function toonKlaarSchermFinal() {
 // ════════════════════════════════════════
 
 const AK_BRONNEN = [
-  { label: '🌟 Engels uitgelicht',         emoji: '🌟', taal: 'en', haalTitel: () => haalUitgelichtArtikel() },
   { label: '🇳🇱 Nederlands uitgelicht',    emoji: '🇳🇱', taal: 'nl', haalTitel: () => haalNlUitgelicht() },
+  { label: '🌟 Engels uitgelicht',         emoji: '🌟', taal: 'en', haalTitel: () => haalUitgelichtArtikel() },
   { label: '🔬 Biologie',                  emoji: '🔬', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Biologie', 'Biologie') },
   { label: '🏛️ Geschiedenis',              emoji: '🏛️', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Geschiedenis', 'Geschiedenis') },
   { label: '🎨 Kunst & cultuur',           emoji: '🎨', taal: 'nl', haalTitel: () => haalNlCategorieArtikel('Kunst en cultuur', 'Kunst') },
