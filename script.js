@@ -298,15 +298,6 @@ async function renderStats() {
       <span style="color:var(--muted);font-size:0.78rem">Langste: ${streakData.langste} dag${streakData.langste !== 1 ? 'en' : ''}</span>
     </div>` : '';
 
-    if (totaal === 0) {
-    el.innerHTML = `
-      ${streakHtml}
-      <div class="stats-hero">
-        <div class="stats-leeg">🌱 Nog geen data — maak je eerste les om je voortgang bij te houden.</div>
-      </div>`;
-    return;
-  }
-
   const totaal = sr.length;
   if (totaal === 0) {
     el.innerHTML = `
