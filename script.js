@@ -308,6 +308,14 @@ async function renderStats() {
   }
 
   const totaal = sr.length;
+  if (totaal === 0) {
+    el.innerHTML = `
+      ${streakHtml}
+      <div class="stats-hero">
+        <div class="stats-leeg">🌱 Nog geen data — maak je eerste les om je voortgang bij te houden.</div>
+      </div>`;
+    return;
+  }
   const nieuw = sr.filter(i => (i.strength ?? 20) < 35).length;
   const lerend = sr.filter(i => (i.strength ?? 20) >= 35 && (i.strength ?? 20) < 70).length;
   const beheerst = sr.filter(i => (i.strength ?? 20) >= 70).length;
@@ -2368,12 +2376,13 @@ function toonHerhalingsRonde() {
   });
 }
 
+  function toonKlaarScherm() {
   if (pendingSR && pendingSR.length > 0) {
     const items = pendingSR;
     pendingSR = [];
     smartActive = false;
     srCallback = () => { toonKlaarSchermFinal(); };
-    srVervolgTekst = 'Doorgaan naar les →';  // voor de zekerheid
+    srVervolgTekst = 'Doorgaan naar les →';
     toonSRReview(items);
     return;
   }
