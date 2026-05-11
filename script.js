@@ -6,6 +6,7 @@ const LS_SR           = 'wikileer_sr';
 const LS_LAST_SESSION = 'wikileer_last_session';
 const LS_LAYOUT       = 'wikileer_layout';
 const LS_CATS         = 'wikileer_categories';
+const LS_STREAK       = 'wikileer_streak';
 const MAX_TEKST       = 40000;
 
 const INTERVALS = [1, 2, 4, 7, 14, 30];
@@ -436,9 +437,30 @@ async function lastSessionToday() {
 async function markSessionDone() {
   try {
     await dbSet(LS_LAST_SESSION, new Date().toISOString().slice(0, 10));
+    await updateStreak();
   } catch (e) {
     console.warn('Fout bij markeren sessie:', e);
   }
+}
+
+async function haalStreak() {
+  try {
+    const raw = await dbGet(LS_STREAK);
+    return raw ? JSON.parse(raw) : { huidig: 0, langste: 0, laatste_datum: null };
+  } catch (e) {
+    return { huidig: 0, langste: 0, laatste_datum: null };
+  }
+}
+
+async function updateStreak() {
+  const streak    = await haalStreak();
+  const vandaag   = new Date().toISOString().slice(0, 10);
+  const gisteren  = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  if (streak.laatste_datum === vandaag) return;
+  streak.huidig       = streak.laatste_datum === gisteren ? streak.huidig + 1 : 1;
+  streak.langste      = Math.max(streak.langste, streak.huidig);
+  streak.laatste_datum = vandaag;
+  await dbSet(LS_STREAK, JSON.stringify(streak));
 }
 
 async function getDueItems() {
@@ -1302,7 +1324,23 @@ GEEF JE ANTWOORD UITSLUITEND ALS GELDIGE JSON — geen uitleg, geen markdown, ge
 ARTIKELTEKST:
 ${ingekorte}`;
 
-  const resultaat = await geminiCall(key, prompt);
+  async function probeerGeminiAanroep(gebuikteTekst) {
+    const ingekorteVersie = gebuikteTekst.length > MAX_TEKST
+      ? gebuikteTekst.slice(0, MAX_TEKST) + '\n\n[tekst ingekort vanwege lengte]'
+      : gebuikteTekst;
+    const splitsPos  = prompt.lastIndexOf('\nARTIKELTEKST:\n');
+    const kortPrompt = prompt.slice(0, splitsPos + '\nARTIKELTEKST:\n'.length) + ingekorteVersie;
+    return await geminiCall(key, kortPrompt);
+  }
+
+  let resultaat;
+  try {
+    resultaat = await geminiCall(key, prompt);
+  } catch (e) {
+    if (!e.message.includes('afgekapt')) throw e;
+    setStatus('Artikel te lang — tweede poging met kortere tekst...', 55, true);
+    resultaat = await probeerGeminiAanroep(tekst.slice(0, Math.floor(tekst.length / 2)));
+  }
 
   if (!resultaat.secties || resultaat.secties.length === 0) {
     throw new Error('Gemini kon het artikel niet in secties opdelen. Probeer het opnieuw.');
