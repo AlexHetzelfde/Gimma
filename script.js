@@ -288,10 +288,18 @@ function sluitStatsModal() {
 
 async function renderStats() {
   const el = document.getElementById('stats-inhoud');
-  const sr = await haalSRData();
+  const sr         = await haalSRData();
+  const streakData = await haalStreak();
 
-  if (!sr || sr.length === 0) {
-    el.innerHTML = `<div class="stats-leeg">🌱 Nog geen data — maak je eerste les om je voortgang bij te houden.</div>`;
+  const streakHtml = streakData.huidig > 0 ? `
+    <div class="stats-streak-balk">
+      <span>🔥 Huidige streak: <strong>${streakData.huidig} dag${streakData.huidig !== 1 ? 'en' : ''}</strong></span>
+      <span style="color:var(--muted);font-size:0.78rem">Langste: ${streakData.langste} dag${streakData.langste !== 1 ? 'en' : ''}</span>
+    </div>` : '';
+
+  el.innerHTML = `
+    ${streakHtml}
+    <div class="stats-hero"><div class="stats-leeg">🌱 Nog geen data — maak je eerste les om je voortgang bij te houden.</div>`;
     return;
   }
 
@@ -616,6 +624,17 @@ async function toonHomescreen() {
   const cache     = await haalGecachedeLes();
   const voortgang = await haalVoortgang();
   const dueItems  = await getDueItems();
+
+  const streak    = await haalStreak();
+  const streakEl  = document.getElementById('streak-display');
+  if (streakEl) {
+    if (streak.huidig > 1) {
+      streakEl.textContent = `🔥 ${streak.huidig} dagen op rij`;
+      streakEl.style.display = '';
+    } else {
+      streakEl.style.display = 'none';
+    }
+  }
 
   // Categorie‑chip
   const chip = document.getElementById('categorie-chip');
