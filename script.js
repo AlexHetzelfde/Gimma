@@ -7,6 +7,7 @@ const LS_LAST_SESSION = 'wikileer_last_session';
 const LS_LAYOUT       = 'wikileer_layout';
 const LS_CATS         = 'wikileer_categories';
 const LS_STREAK       = 'wikileer_streak';
+const LS_FEEDBACK     = 'wikileer_feedback';
 const MAX_TEKST       = 40000;
 
 const INTERVALS = [1, 2, 4, 7, 14, 30];
@@ -471,6 +472,62 @@ async function updateStreak() {
   await dbSet(LS_STREAK, JSON.stringify(streak));
 }
 
+async function haalFeedback() {
+  try {
+    const raw = await dbGet(LS_FEEDBACK);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+
+async function voegFeedbackToe(item) {
+  const feedback = await haalFeedback();
+  feedback.push({ ...item, timestamp: Date.now() });
+  if (feedback.length > 50) feedback.splice(0, feedback.length - 50);
+  await dbSet(LS_FEEDBACK, JSON.stringify(feedback));
+}
+
+function toonFeedbackPicker(container, vraagId, vraagTekst, antwoord) {
+  const redenen = ['Te vaag', 'Antwoord klopt niet', 'Vraag en antwoord zeggen hetzelfde', 'Andere reden'];
+  const wrap  = document.createElement('div');
+  wrap.className = 'feedback-wrap';
+
+  const knop  = document.createElement('button');
+  knop.className = 'feedback-duim-knop';
+  knop.innerHTML = '👎 <span>Meld probleem</span>';
+
+  const picker = document.createElement('div');
+  picker.className = 'feedback-picker';
+  picker.style.display = 'none';
+
+  const label = document.createElement('div');
+  label.className = 'feedback-picker-label';
+  label.textContent = 'Wat klopt er niet?';
+  picker.appendChild(label);
+
+  redenen.forEach(reden => {
+    const btn = document.createElement('button');
+    btn.className = 'feedback-optie';
+    btn.textContent = reden;
+    btn.addEventListener('click', async () => {
+      await voegFeedbackToe({ vraagId, vraagTekst, antwoord, reden });
+      picker.style.display = 'none';
+      knop.innerHTML = '✓ Bedankt';
+      knop.disabled = true;
+      knop.classList.add('feedback-verstuurd');
+      toonToast('Feedback opgeslagen!');
+    });
+    picker.appendChild(btn);
+  });
+
+  knop.addEventListener('click', () => {
+    picker.style.display = picker.style.display === 'none' ? 'flex' : 'none';
+  });
+
+  wrap.appendChild(knop);
+  wrap.appendChild(picker);
+  container.appendChild(wrap);
+}
+
 async function getDueItems() {
   const sr      = await haalSRData();
   const vandaag = await lastSessionToday();
@@ -917,6 +974,10 @@ function toonSRReview(dueItems) {
       });
       [huidigeCategorieKleur, huidigeCategorieNaam] = voorheen;
       setTimeout(() => maakVolgendeKnop(), 400);
+      const srAntwoord = vraagType === 'multiplechoice'
+        ? (item.opties && item.opties[item.correcteIndex]) || ''
+        : item.antwoord || '';
+      setTimeout(() => toonFeedbackPicker(blok, item.id, item.vraag, srAntwoord), 600);
     }
 
     // ─────────────────────────────────────────
@@ -1374,6 +1435,11 @@ ${ingekorte}`;
 async function maakMetadataEnVragenMetGemini(titel, secties, afbeeldingen, cats) {
   const key = await haalKey();
 
+  const feedbackItems = (await haalFeedback()).slice(-10);
+  const feedbackTekst = feedbackItems.length > 0
+    ? `\nNEGATIEVE VOORBEELDEN — vermijd vragen van dit type:\n${feedbackItems.map(f => `- "${f.vraagTekst}" (reden: ${f.reden})`).join('\n')}\n`
+    : '';
+
   const catsTekst = cats.length > 0
     ? `Bestaande categorieën (gebruik er één als die goed past, exact dezelfde naam en kleur):\n${JSON.stringify(cats.map(c => ({ naam: c.naam, kleur: c.kleur })), null, 2)}`
     : 'Nog geen bestaande categorieën — maak een nieuwe aan.';
@@ -1441,7 +1507,7 @@ GEEF JE ANTWOORD UITSLUITEND ALS GELDIGE JSON — geen uitleg, geen markdown.
   ]
 }
 
-LES:
+${feedbackTekst}LES:
 ${JSON.stringify(sectiesVoorPrompt, null, 2)}`;
 
   return await geminiCall(key, prompt);
@@ -1848,6 +1914,7 @@ function toonVraag(vi) {
       knopVolgende.disabled = false;
       slaVoortgangOp({ sectieIndex: huidigeSectie, vraagIndex: vi, inVragen: true, voltooid: false, titel: artikelTitel, vraagResultaten });
       renderShields();
+      setTimeout(() => toonFeedbackPicker(blok, vraagId, vraag.vraag, vraag.opties[vraag.correcteIndex] || ''), 500);
     }
 
     const vraagDiv = document.createElement('div');
@@ -1914,6 +1981,7 @@ function toonVraag(vi) {
       knopVolgende.disabled = false;
       slaVoortgangOp({ sectieIndex: huidigeSectie, vraagIndex: vi, inVragen: true, voltooid: false, titel: artikelTitel, vraagResultaten });
       renderShields();
+      setTimeout(() => toonFeedbackPicker(blok, vraagId, vraag.vraag, antwoord), 500);
     }
 
     blok.querySelector('.knop-onthul').onclick = () => {
