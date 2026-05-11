@@ -1311,37 +1311,6 @@ ${ingekorte}`;
   return resultaat;
 }
 
-ARTIKEL TEKST (Engels):
-${ingekorte}`;
-
-  const resultaat = await geminiCall(key, prompt);
-
-  if (resultaat.secties && afbeeldingen.length > 0) {
-    for (const sectie of resultaat.secties) {
-      if (sectie.afbeelding && sectie.afbeelding !== 'null') {
-        const naamGemini = sectie.afbeelding.toLowerCase().replace(/\.[^.]+$/, '');
-        const match = afbeeldingen.find(a => {
-          const aNaam = a.naam.toLowerCase().replace(/\.[^.]+$/, '');
-          return aNaam === naamGemini ||
-                 aNaam.includes(naamGemini) ||
-                 naamGemini.includes(aNaam);
-        });
-        if (match) {
-          sectie.afbeeldingUrl = match.url;
-        } else {
-          sectie.afbeelding    = null;
-          sectie.afbeeldingUrl = null;
-        }
-      } else {
-        sectie.afbeelding    = null;
-        sectie.afbeeldingUrl = null;
-      }
-    }
-  }
-
-  return resultaat;
-}
-
 // ════════════════════════════════════════
 // GEMINI — FLASHCARD VRAGEN GENEREREN
 // ════════════════════════════════════════
