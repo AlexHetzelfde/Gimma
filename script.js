@@ -1254,74 +1254,61 @@ async function geminiCall(key, prompt) {
 }
 
 async function verwerkTekstMetGemini(titel, tekst, taal = 'en') {
-  const key  = await haalKey();
-  const cats = await haalCategorieën();
-
-  let afbeeldingen = [];
-  try {
-    afbeeldingen = await haalAfbeeldingen(titel, taal);
-  } catch (e) {
-    console.warn('Afbeeldingen ophalen mislukt, ga door zonder:', e);
-  }
+  const key = await haalKey();
 
   const ingekorte = tekst.length > MAX_TEKST
     ? tekst.slice(0, MAX_TEKST) + '\n\n[tekst ingekort vanwege lengte]'
     : tekst;
 
-  const catsTekst = cats.length > 0
-    ? `Bestaande categorieën (gebruik er één als die goed past, met exact dezelfde naam en kleur):\n${JSON.stringify(cats.map(c => ({ naam: c.naam, kleur: c.kleur })), null, 2)}`
-    : 'Er zijn nog geen bestaande categorieën — maak een nieuwe aan.';
-
-  const bestaandeKleuren = cats.map(c => c.kleur).join(', ') || 'geen';
-
-  const afbeeldingenTekst = afbeeldingen.length > 0
-    ? `BESCHIKBARE AFBEELDINGEN UIT DIT ARTIKEL:\n${afbeeldingen.map(a => `• "${a.naam}": ${a.beschrijving}`).join('\n')}\n\nAFBEELDING REGELS:\n- Voeg per sectie MAXIMAAL ÉÉN afbeelding toe\n- ALLEEN als de sectietekst een visueel concept uitlegt waarbij een foto begripsvorming significant verbetert\n- Denk aan: architectonische onderdelen, anatomie, geografische structuren, historische objecten, technische schema's, biologische soorten, kunstwerken, kaarten\n- NIET gebruiken voor: portretten, algemene sfeerbeelden, niet-visuele concepten (politiek, filosofie, etc.)\n- De waarde van "afbeelding" moet EXACT een bestandsnaam uit de lijst hierboven zijn\n- Als geen afbeelding passend is: gebruik null`
-    : 'Er zijn geen geschikte afbeeldingen beschikbaar voor dit artikel. Gebruik altijd null voor het afbeelding-veld.';
-
   const bronTaalTekst = taal === 'nl'
-    ? `De brontekst is in het Nederlands. Herschrijf de inhoud in helder, journalistiek Nederlands. Je hoeft niet te vertalen.`
-    : `De brontekst is in het Engels. Schrijf ALLE output — sectietitels, sectieteksten, tijdlijnen — uitsluitend in correct, vloeiend Nederlands. Vertaal en herschrijf de inhoud; kopieer nooit Engelse zinnen letterlijk over.`;
+    ? `De brontekst is in het Nederlands.`
+    : `De brontekst is in het Engels. Schrijf ALLE output uitsluitend in correct Nederlands. Vertaal en herschrijf; kopieer nooit Engelse zinnen.`;
 
-  const prompt = `Je bent een professionele schrijver die Wikipedia-artikelen omzet naar heldere, boeiende Nederlandstalige lessen.
-
-Je krijgt het Wikipedia-artikel: "${titel}"
+  const prompt = `Je bent redacteur bij NRC. Jouw enige taak: schrijf een heldere, boeiende les over "${titel}" in goed Nederlands proza.
 
 TAAL: ${bronTaalTekst}
 
-JOUW TAAK:
-1. Bepaal hoeveel secties nodig zijn (minimaal 3, maximaal 6) op basis van de lengte en complexiteit van het artikel
-2. Schrijf elke sectietekst in goed, helder Nederlands — alsof je een enthousiaste maar heldere journalist bent
-3. Schrijf echte alinea's, geen droge opsommingen of bullet points
-4. Voeg een tijdlijn toe ALLEEN als het artikel duidelijke historische data/gebeurtenissen bevat. Laat het tijdlijn-veld anders volledig weg.
-5. Bepaal de categorie en bijbehorende kleur (zie regels hieronder)
-6. Kies per sectie eventueel een afbeelding (zie afbeeldingsregels hieronder)
+SCHRIJFREGELS — elk van deze regels is verplicht:
 
-CATEGORIE & KLEUR:
-${catsTekst}
+1. DOORLOPEND VERHAAL: De les vertelt één verhaal. Elke sectie bouwt voort op de vorige. Stel jezelf na elke sectie de vraag: wat weet de lezer nu dat hij daarvoor nog niet wist? Als het antwoord "niets nieuws" is, herschrijf dan.
 
-Regels voor nieuwe categorieën:
-- Korte Nederlandse naam, maximaal 20 tekens
-- Voorbeelden: "Biologie", "Middeleeuwse geschiedenis", "Sterrenkunde", "Filosofie", "Architectuur", "Technologie", "Geografie", "Kunst & cultuur"
-- Kleur moet goed leesbaar zijn op donkere achtergrond (#0f0f0f)
-- Niet te donker (perceived lightness > 50%), niet bruin/zwart/wit
-- Duidelijk anders dan bestaande kleuren: ${bestaandeKleuren}
-- Goede kleurvoorbeelden: #7cb9e8, #e07b6a, #82d4b0, #c9a0dc, #f4c56a, #6fbad4, #e8926a
+2. BEGRIPPEN UITLEGGEN: Elk vaktaalbegrip of moeilijk woord wordt uitgelegd op het moment dat je het introduceert — in dezelfde of de volgende zin. Schrijf niet "de devotie rond de heilige", maar "de devotie — het actief vereren van een heilige via gebeden, processies en pelgrimstochten —". Geen enkel begrip mag onverklaard blijven.
 
-${afbeeldingenTekst}
+3. VERBODEN WOORDEN: Gebruik nooit: indrukwekkend, meesterlijk, iconisch, verfijnd, bijzonder, opmerkelijk, fascinerend, uniek, spectaculair, enorm belangrijk. Als je wil zeggen dat iets belangrijk is: leg uit waaróm. Als je wil zeggen dat iets mooi is: beschrijf wat je ziet.
+
+4. CONCREET EN CAUSAAL: Schrijf niet "de materialen waren van hoge kwaliteit". Schrijf wát de materialen waren en wat dat betekende voor wie ze gebruikte of zag. Elk oordeel heeft een onderbouwing.
+
+5. ZINSVARIATIE: Wissel korte zinnen (5–10 woorden) bewust af met langere. Een korte zin na een lange geeft nadruk. Gebruik dat.
+
+6. SELECTEER: Je hoeft niet alles uit de brontekst te verwerken. Kies wat het verhaal vooruithelpt. Drie alinea's die goed samenhangen zijn beter dan zes die los van elkaar staan.
+
+STRUCTUUR:
+- Minimaal 3, maximaal 6 secties
+- Elke sectie heeft een pakkende titel
+- Elke sectie heeft een "kernpunt": één heldere zin die samenvat wat de lezer na deze sectie begrijpt — niet wát er staat, maar wát de inzicht is
 
 GEEF JE ANTWOORD UITSLUITEND ALS GELDIGE JSON — geen uitleg, geen markdown, geen backticks.
 
 {
-  "categorie": "Naam van de categorie",
-  "categorieKleur": "#hexkleur",
   "secties": [
     {
-      "titel": "Titel van de sectie",
-      "tekst": "De herschreven leesbare tekst in het Nederlands. Gebruik \\n\\n tussen alinea's.",
-      "afbeelding": "Exacte_bestandsnaam.jpg",
-      "tijdlijn": [{"jaar": "1850", "gebeurtenis": "Wat er gebeurde"}]
+      "titel": "Pakkende sectietitel",
+      "tekst": "Lopende tekst in alinea's, gescheiden door \\n\\n.",
+      "kernpunt": "Na deze sectie begrijpt de lezer dat..."
     }
   ]
+}
+
+ARTIKELTEKST:
+${ingekorte}`;
+
+  const resultaat = await geminiCall(key, prompt);
+
+  if (!resultaat.secties || resultaat.secties.length === 0) {
+    throw new Error('Gemini kon het artikel niet in secties opdelen. Probeer het opnieuw.');
+  }
+
+  return resultaat;
 }
 
 ARTIKEL TEKST (Engels):
@@ -1358,84 +1345,140 @@ ${ingekorte}`;
 // ════════════════════════════════════════
 // GEMINI — FLASHCARD VRAGEN GENEREREN
 // ════════════════════════════════════════
-async function maakVragenMetGemini(titel, secties) {
+async function maakMetadataEnVragenMetGemini(titel, secties, afbeeldingen, cats) {
   const key = await haalKey();
 
-  const sectiesVoorVragen = secties.map((s, i) => ({
+  const catsTekst = cats.length > 0
+    ? `Bestaande categorieën (gebruik er één als die goed past, exact dezelfde naam en kleur):\n${JSON.stringify(cats.map(c => ({ naam: c.naam, kleur: c.kleur })), null, 2)}`
+    : 'Nog geen bestaande categorieën — maak een nieuwe aan.';
+
+  const bestaandeKleuren = cats.map(c => c.kleur).join(', ') || 'geen';
+
+  const afbeeldingenTekst = afbeeldingen.length > 0
+    ? `BESCHIKBARE AFBEELDINGEN:\n${afbeeldingen.map(a => `• "${a.naam}": ${a.beschrijving}`).join('\n')}\n\nRegel: max één afbeelding per sectie, alleen bij visuele concepten (architectuur, anatomie, geografie, kunstwerken, diersoorten). Anders null.`
+    : 'Geen afbeeldingen beschikbaar. Gebruik altijd null voor het afbeelding-veld.';
+
+  const sectiesVoorPrompt = secties.map((s, i) => ({
     sectie: i + 1,
-    titel:  s.titel,
-    tekst:  s.tekst
+    titel: s.titel,
+    tekst: s.tekst,
+    kernpunt: s.kernpunt
   }));
 
-  const prompt = `Je bent een professionele toetsenmaker. Hieronder staat een herschreven Nederlandstalige les over "${titel}", verdeeld in secties. Maak per sectie 2 à 3 vragen. Elke vraag is willekeurig OF een multiple choice vraag (met 4 opties, 1 juist) OF een flashcard vraag (open vraag met antwoord). Je kiest zelf per vraag welk type het beste past. Zorg voor een afwisseling.
+  const prompt = `Je krijgt een les over "${titel}", verdeeld in secties. Elke sectie heeft een kernpunt: wat de lezer na het lezen moet begrijpen.
 
-TAAL: Alle vragen en antwoorden in het Nederlands.
+Jouw taken: bepaal categorie, koppel afbeeldingen, maak tijdlijnen waar nodig, schrijf vragen.
 
-MULTIPLE CHOICE REGELS:
-- Precies 4 opties, waarvan 1 correct.
-- De drie andere opties zijn aannemelijk fout.
-- Voeg "opties": ["optie1","optie2","optie3","optie4"] en "correcteIndex" (0..3) toe.
+CATEGORIE & KLEUR:
+${catsTekst}
+Nieuwe categorie regels:
+- Korte Nederlandse naam, max 20 tekens
+- Kleur leesbaar op donkere achtergrond (#0f0f0f), perceived lightness > 50%
+- Duidelijk anders dan: ${bestaandeKleuren}
+- Voorbeelden: #7cb9e8, #e07b6a, #82d4b0, #c9a0dc, #f4c56a
 
-FLASHCARD REGELS:
-- Gebruik type "flashcard"
-- Vraag en antwoord zoals vroeger (antwoord is een korte zin).
+${afbeeldingenTekst}
 
-GEEF JE ANTWOORD UITSLUITEND ALS JSON — geen uitleg, geen markdown.
-Gebruik voor elke vraag dit formaat:
+TIJDLIJN: Alleen toevoegen als de sectie expliciete historische datums bevat. Anders weglaten.
+
+VRAGEN — verplichte regels:
+1. Elke vraag is gebaseerd op het kernpunt van de sectie, niet op een los feit
+2. Vraag naar WAAROM of HOE, nooit alleen naar WAT. "Wat is X?" is alleen geldig als het antwoord een mechanisme of oorzaak-gevolgrelatie uitlegt
+3. Het antwoord mag NOOIT dezelfde woorden herhalen als de vraag. Als de vraag "waarom was X belangrijk?" is, geeft het antwoord de concrete reden — niet "omdat X zo bijzonder was"
+4. Wissel flashcard (open) en multiplechoice (4 opties, 1 correct) af
+5. Foute opties bij multiple choice zijn aannemelijk maar aantoonbaar onjuist op basis van de tekst
+6. 2 à 3 vragen per sectie
+
+GEEF JE ANTWOORD UITSLUITEND ALS GELDIGE JSON — geen uitleg, geen markdown.
 
 {
+  "categorie": "Naam",
+  "categorieKleur": "#hexkleur",
   "secties": [
     {
+      "afbeelding": "Exacte_bestandsnaam.jpg of null",
+      "tijdlijn": [{"jaar": "1200", "gebeurtenis": "Wat er gebeurde"}],
       "vragen": [
         {
           "type": "multiplechoice",
-          "vraag": "Wat was de belangrijkste oorzaak?",
-          "opties": ["optie A", "optie B", "optie C", "optie D"],
+          "vraag": "Waarom/Hoe-vraag gebaseerd op het kernpunt",
+          "opties": ["A", "B", "C", "D"],
           "correcteIndex": 0
         },
         {
           "type": "flashcard",
-          "vraag": "Wat is de hoofdstad van Frankrijk?",
-          "antwoord": "Parijs"
+          "vraag": "Waarom/Hoe-vraag gebaseerd op het kernpunt",
+          "antwoord": "Concreet antwoord dat de redenering uitlegt"
         }
       ]
     }
   ]
 }
 
-LES INHOUD:
-${JSON.stringify(sectiesVoorVragen, null, 2)}`;
+LES:
+${JSON.stringify(sectiesVoorPrompt, null, 2)}`;
 
   return await geminiCall(key, prompt);
 }
 
 async function verwerkMetGemini(titel, tekst, taal = 'en') {
-  const tekstResultaat = await verwerkTekstMetGemini(titel, tekst, taal);
+  // Call 1 en afbeeldingen parallel starten
+  const [schrijfResultaat, afbeeldingen] = await Promise.all([
+    verwerkTekstMetGemini(titel, tekst, taal),
+    haalAfbeeldingen(titel, taal).catch(e => {
+      console.warn('Afbeeldingen ophalen mislukt, ga door zonder:', e);
+      return [];
+    })
+  ]);
 
-  if (!tekstResultaat.secties || tekstResultaat.secties.length === 0) {
-    throw new Error('Gemini kon het artikel niet in secties opdelen. Probeer het opnieuw.');
-  }
-
-  if (tekstResultaat.categorie && tekstResultaat.categorieKleur) {
-    await registreerCategorie(tekstResultaat.categorie, tekstResultaat.categorieKleur);
-  }
+  const cats = await haalCategorieën();
 
   await new Promise(r => setTimeout(r, 500));
 
-  const vragenResultaat = await maakVragenMetGemini(titel, tekstResultaat.secties);
+  // Call 2: metadata + vragen
+  const metadataResultaat = await maakMetadataEnVragenMetGemini(
+    titel, schrijfResultaat.secties, afbeeldingen, cats
+  );
 
-  if (!vragenResultaat.secties || vragenResultaat.secties.length === 0) {
+  if (!metadataResultaat.secties || metadataResultaat.secties.length === 0) {
     throw new Error('Gemini kon geen vragen genereren. Probeer het opnieuw.');
   }
 
-  const secties = tekstResultaat.secties.map((sectie, i) => ({
+  if (metadataResultaat.categorie && metadataResultaat.categorieKleur) {
+    await registreerCategorie(metadataResultaat.categorie, metadataResultaat.categorieKleur);
+  }
+
+  // Afbeelding-URL matching
+  const metaSecties = metadataResultaat.secties;
+  if (afbeeldingen.length > 0) {
+    for (const sectie of metaSecties) {
+      if (sectie.afbeelding && sectie.afbeelding !== 'null') {
+        const naamGemini = sectie.afbeelding.toLowerCase().replace(/\.[^.]+$/, '');
+        const match = afbeeldingen.find(a => {
+          const aNaam = a.naam.toLowerCase().replace(/\.[^.]+$/, '');
+          return aNaam === naamGemini || aNaam.includes(naamGemini) || naamGemini.includes(aNaam);
+        });
+        sectie.afbeeldingUrl = match ? match.url : null;
+        if (!match) sectie.afbeelding = null;
+      } else {
+        sectie.afbeelding = null;
+        sectie.afbeeldingUrl = null;
+      }
+    }
+  }
+
+  // Samenvoegen
+  const secties = schrijfResultaat.secties.map((sectie, i) => ({
     ...sectie,
-    vragen: vragenResultaat.secties[i]?.vragen || []
+    afbeelding:    metaSecties[i]?.afbeelding    || null,
+    afbeeldingUrl: metaSecties[i]?.afbeeldingUrl || null,
+    tijdlijn:      metaSecties[i]?.tijdlijn      || [],
+    vragen:        metaSecties[i]?.vragen        || []
   }));
 
   return {
-    categorie:      tekstResultaat.categorie,
-    categorieKleur: tekstResultaat.categorieKleur,
+    categorie:      metadataResultaat.categorie,
+    categorieKleur: metadataResultaat.categorieKleur,
     secties
   };
 }
